@@ -6,6 +6,7 @@ mod calendar;
 mod debug_log;
 mod dnd;
 mod edge;
+mod instance;
 mod keyboard;
 mod library;
 mod media;
@@ -33,6 +34,11 @@ fn quit_app(app: tauri::AppHandle) {
 }
 
 fn main() {
+    // Take over from (or, with --quit, just stop) a copy already running.
+    if !instance::claim() {
+        return;
+    }
+
     // Whatever happens, try hard to give the user their taskbar back.
     let default_panic = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -92,6 +98,7 @@ fn main() {
             dnd::turn_on();
             apps::refresh_in_background();
             keyboard::install(handle.clone());
+            instance::quit_when_asked(handle.clone());
             // Dev aid: PANE_DEBUG_OPEN=1 opens the pane on launch (debug builds only).
             #[cfg(debug_assertions)]
             if std::env::var("PANE_DEBUG_OPEN").is_ok() {
