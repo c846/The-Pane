@@ -1,0 +1,55 @@
+/* Popup menus: right-click options and the favorites overflow list. */
+
+.menu {
+  position: fixed;
+  z-index: 100; /* above the search results */
+  min-width: 200px;
+  max-width: 320px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: var(--radius);
+  background: var(--menu-bg);
+  backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 12px 32px var(--menu-shadow);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.menu-item.active {
+  background: var(--selected);
+}
+
+.menu-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+}
+
+.menu-icon.placeholder {
+  background: var(--placeholder);
+}
+
+.menu-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--edge);
+}

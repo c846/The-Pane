@@ -1,0 +1,165 @@
+/* The Pane settings dialog. */
+
+.settings-dialog {
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--menu-bg);
+  backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 16px 48px var(--menu-shadow);
+}
+
+/* Dialogs slide up into view and back down when closed, however they close. */
+.settings-dialog {
+  opacity: 0;
+  translate: 0 28px;
+  transition:
+    opacity 180ms ease,
+    translate 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    overlay 260ms allow-discrete,
+    display 260ms allow-discrete;
+}
+
+.settings-dialog[open] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  .settings-dialog[open] {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+.settings-dialog::backdrop {
+  background: rgba(0, 0, 0, 0);
+  transition:
+    background-color 260ms ease,
+    overlay 260ms allow-discrete,
+    display 260ms allow-discrete;
+}
+
+.settings-dialog[open]::backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+@starting-style {
+  .settings-dialog[open]::backdrop {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.settings-title {
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-section .group-label {
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-input {
+  width: 120px;
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--radius);
+  outline: none;
+  background: var(--tile-bg);
+  color: var(--text);
+  font: inherit;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.text-input:focus {
+  background: var(--tile-bg-hover);
+}
+
+.text-input::placeholder {
+  color: var(--text-faint);
+}
+
+.field-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* On/off switches: a small rectangular track with an upright handle,
+   like the slider handles. */
+.switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+}
+
+.switch input {
+  position: relative;
+  width: 36px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--edge-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.switch input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--text-dim);
+}
+
+.switch input:checked {
+  border-color: var(--text);
+  background: var(--text);
+}
+
+.switch input:checked::after {
+  left: 24px;
+  background: var(--menu-bg-solid);
+}
+
+.switch input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}

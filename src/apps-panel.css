@@ -1,0 +1,42 @@
+/* Top-left quadrant: recent and favorite apps, two rows of three tiles. */
+
+.q-apps {
+  gap: 14px;
+}
+
+.tile-icon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: var(--radius-sm);
+}
+
+/* Shown until the real icon has loaded (or if it can't be read). */
+.tile-icon.placeholder {
+  background: var(--placeholder);
+}
+
+/* A free slot: takes up space but shows nothing. */
+.tile-empty {
+  border-color: transparent;
+}
+
+/* The "more" tile: one of the other favorites at a time, in a window the
+   same size as an icon, so they can slide in and out of it. */
+.more-carousel {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.more-icon {
+  position: absolute;
+  inset: 0;
+}
+
+.more-tile .tile-label {
+  color: var(--text-dim);
+}

@@ -1,0 +1,122 @@
+/* Bottom-left quadrant: volume and brightness sliders, Settings and Power
+   tiles, and the Pane settings button. */
+
+.q-system {
+  gap: 14px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+}
+
+/* The icon at the start of a slider row (the volume one doubles as mute). */
+.slider-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  --icon-size: 20px;
+  /* No glass until hovered (otherwise it shows the quadrant's tint). */
+  --glass-tint: transparent;
+  --glass-filter: none;
+}
+
+button.slider-icon:hover {
+  --glass-tint: var(--tile-bg);
+  --glass-filter: var(--glass-control);
+}
+
+button.slider-icon:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sun {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.slider-value {
+  flex: none;
+  width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+/* Range slider: a thin track, filled up to the value (--fill, set by
+   pc-panel.js), with a small upright handle. */
+.slider {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    to right,
+    var(--text) var(--fill, 0%),
+    var(--edge-strong) var(--fill, 0%)
+  );
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 18px;
+  margin-top: -7px; /* centre on the track */
+  border-radius: var(--radius-sm);
+  background: var(--text);
+}
+
+.slider:focus {
+  outline: none;
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Muted: icon and slider fade out. */
+.slider-row.muted .icon-volume,
+.slider-row.muted .slider,
+.slider-row.muted .slider-value {
+  opacity: 0.4;
+}
+
+/* Settings and Power icons. */
+.tile-glyph {
+  --icon-size: 32px;
+}
+
+/* Settings and Power: two wide buttons sharing all the space below the sliders. */
+.pc-actions {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pc-actions .tile {
+  aspect-ratio: auto;
+  height: 100%;
+}

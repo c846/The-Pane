@@ -1,0 +1,31 @@
+/* The pane's background: the desktop wallpaper, blurred, with a tint. */
+
+/* Desktop wallpaper, screen-sized and blurred. It overhangs the screen by
+   40px on every side so the blur doesn't fade out at the edges.
+   Width and height are set by backdrop.js. The colour shows only if there
+   is no wallpaper image. (Not on html or body: the window is see-through
+   wherever the pane isn't.) */
+.backdrop {
+  position: absolute;
+  left: -40px;
+  top: -40px;
+  background-color: #141418;
+  background-position: center;
+  background-size: cover;
+  filter: blur(24px);
+  z-index: -2;
+}
+
+/* Layer over the blur that keeps text readable. On a dark wallpaper it
+   darkens (for white text); on a light one it lightens a little (for black
+   text). backdrop.js sets data-wallpaper on <html>. */
+.tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 16, 20, 0.35);
+  z-index: -1;
+}
+
+:root[data-wallpaper="light"] .tint {
+  background: rgba(248, 248, 250, 0.12);
+}

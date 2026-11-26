@@ -1,0 +1,88 @@
+/* Shared animation: hover highlights fade, panels and buttons grow a little
+   (with a soft shadow) while hovered, slider handles grow. Pressing is in
+   motion.js; component-specific motion lives with each component. */
+
+:root {
+  --fade: 160ms ease;
+  --grow: 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --lift-shadow: 0 10px 28px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-wallpaper="light"] {
+  --lift-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+}
+
+/* ---- Highlights fade in and out --------------------------------------------- */
+
+/* Glass tints (tiles, buttons, search box) change on the glass layer. */
+.glass::before {
+  transition: background-color var(--fade), backdrop-filter var(--fade);
+}
+
+.result,
+.menu-item,
+.hour,
+.cal-day,
+.cal-title,
+.cal-arrow,
+.now-place,
+.text-input,
+.search-box,
+.switch input {
+  transition: background-color var(--fade), color var(--fade), border-color var(--fade);
+}
+
+/* Switch handles slide across. */
+.switch input::after {
+  transition: left var(--grow), background-color var(--fade);
+}
+
+/* ---- Panels grow a little while hovered ------------------------------------- */
+
+.quadrant,
+.tile:not(.tile-empty),
+.button,
+.alert-badge,
+.media-button,
+.media-source,
+.slider-icon {
+  transition:
+    scale var(--grow),
+    box-shadow var(--grow),
+    background-color var(--fade),
+    color var(--fade),
+    border-color var(--fade);
+}
+
+.quadrant:hover {
+  z-index: 1; /* its shadow lies over its neighbours */
+  scale: 1.008;
+  box-shadow: var(--lift-shadow);
+}
+
+.tile:not(.tile-empty):hover,
+.button:hover,
+.alert-badge:hover,
+.media-button:hover:not(:disabled),
+.media-source:hover,
+button.slider-icon:hover {
+  z-index: 1;
+  scale: 1.05;
+  box-shadow: var(--lift-shadow);
+}
+
+/* The big Settings and Power tiles need less to show it. */
+.pc-actions .tile:hover {
+  scale: 1.025;
+}
+
+/* ---- Slider handles grow while hovered or dragged ---------------------------- */
+
+.slider::-webkit-slider-thumb {
+  transition: transform var(--grow);
+}
+
+.slider:not(:disabled):hover::-webkit-slider-thumb,
+.slider:not(:disabled):active::-webkit-slider-thumb {
+  transform: scale(1.3);
+}

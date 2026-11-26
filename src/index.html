@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Pane</title>
+    <link rel="stylesheet" href="backdrop.css" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="search.css" />
+    <link rel="stylesheet" href="menu.css" />
+    <link rel="stylesheet" href="apps-panel.css" />
+    <link rel="stylesheet" href="pc-panel.css" />
+    <link rel="stylesheet" href="pane-settings.css" />
+    <link rel="stylesheet" href="tooltip.css" />
+    <link rel="stylesheet" href="weather.css" />
+    <link rel="stylesheet" href="calendar.css" />
+    <link rel="stylesheet" href="media.css" />
+    <link rel="stylesheet" href="glance.css" />
+    <link rel="stylesheet" href="motion.css" />
+  </head>
+  <body>
+    <!-- The pane itself, slid in and out of the (full-screen, see-through)
+         window by slide.js. -->
+    <div class="sheet" id="sheet">
+      <!-- The desktop wallpaper, blurred. -->
+      <div id="backdrop" class="backdrop" aria-hidden="true"></div>
+      <div class="tint" aria-hidden="true"></div>
+      <main class="pane">
+        <!-- Search bar: find and launch apps. -->
+        <div class="search" id="search">
+          <div class="search-box glass">
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Search"
+              aria-label="Search apps"
+              autocomplete="off"
+              spellcheck="false"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="search-results"
+              aria-autocomplete="list"
+            />
+          </div>
+          <ul id="search-results" class="search-results" role="listbox" aria-label="Apps" hidden></ul>
+        </div>
+
+        <div class="quadrants">
+          <div class="column column-left">
+            <section class="quadrant glass q-apps" aria-label="Apps">
+              <div class="app-group">
+                <h3 class="group-label" id="recent-label">Recently Used Apps</h3>
+                <div class="tile-row" id="recent-apps" role="group" aria-labelledby="recent-label"></div>
+              </div>
+              <div class="app-group">
+                <h3 class="group-label" id="favorites-label">Favorites</h3>
+                <div class="tile-row" id="favorite-apps" role="group" aria-labelledby="favorites-label"></div>
+              </div>
+            </section>
+
+            <section class="quadrant glass q-system" aria-label="PC">
+              <div class="slider-row" id="volume-row" hidden>
+                <button class="slider-icon glass" id="mute" type="button" title="Mute" aria-label="Mute" aria-pressed="false">
+                  <span class="icon icon-volume" aria-hidden="true"></span>
+                </button>
+                <input class="slider" id="volume" type="range" min="0" max="100" aria-label="Volume" />
+                <span class="slider-value" id="volume-value" aria-hidden="true"></span>
+              </div>
+              <div class="slider-row" id="brightness-row" hidden>
+                <span class="slider-icon" aria-hidden="true">
+                  <svg class="sun" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="4.5" />
+                    <g stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                      <line x1="12" y1="1.8" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22.2" />
+                      <line x1="1.8" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22.2" y2="12" />
+                      <line x1="4.8" y1="4.8" x2="6.3" y2="6.3" /><line x1="17.7" y1="17.7" x2="19.2" y2="19.2" />
+                      <line x1="4.8" y1="19.2" x2="6.3" y2="17.7" /><line x1="17.7" y1="6.3" x2="19.2" y2="4.8" />
+                    </g>
+                  </svg>
+                </span>
+                <input class="slider" id="brightness" type="range" min="0" max="100" aria-label="Brightness" />
+                <span class="slider-value" id="brightness-value" aria-hidden="true"></span>
+              </div>
+
+              <div class="pc-actions">
+                <button class="tile glass" id="settings-tile" type="button" aria-haspopup="menu" aria-expanded="false">
+                  <span class="icon icon-windows-settings tile-glyph" aria-hidden="true"></span>
+                  <span class="tile-label">Settings</span>
+                </button>
+                <button class="tile glass" id="power" type="button" aria-haspopup="menu" aria-expanded="false">
+                  <span class="icon icon-power tile-glyph" aria-hidden="true"></span>
+                  <span class="tile-label">Power</span>
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <div class="column column-right">
+            <section class="quadrant glass q-glance" aria-label="Weather and calendar">
+              <div class="weather" id="weather" aria-label="Weather">
+                <div class="weather-now" id="weather-now"></div>
+                <div class="weather-hours" id="weather-hours" aria-label="Next 48 hours"></div>
+                <div class="weather-week" id="weather-week" aria-label="This week"></div>
+                <div class="weather-message" id="weather-message" hidden></div>
+              </div>
+
+              <div class="calendar" id="calendar" aria-label="Calendar">
+                <!-- One line: day, time, battery. -->
+                <div class="clock">
+                  <span class="clock-day" id="clock-day"></span>
+                  <span class="clock-time" id="clock-time"></span>
+                  <span class="battery" id="battery" hidden>
+                    <span class="icon icon-battery-saver" id="battery-saver" title="Battery saver is on" hidden></span>
+                    <span class="battery-text" id="battery-text"></span>
+                  </span>
+                </div>
+                <div class="cal-header">
+                  <button class="cal-arrow" id="cal-prev" type="button" title="Previous month" aria-label="Previous month"><svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><polyline points="8,2 4,6 8,10" /></svg></button>
+                  <button class="cal-title" id="cal-title" type="button" title="Back to today"></button>
+                  <button class="cal-arrow" id="cal-next" type="button" title="Next month" aria-label="Next month"><svg class="chevron" viewBox="0 0 12 12" aria-hidden="true"><polyline points="4,2 8,6 4,10" /></svg></button>
+                </div>
+                <div class="cal-grid" id="cal-grid"></div>
+              </div>
+            </section>
+            <section class="quadrant glass q-media" aria-label="Music">
+              <div class="media" id="media" hidden>
+                <div class="media-art" id="media-art">
+                  <span class="icon icon-music" aria-hidden="true"></span>
+                  <img id="media-art-img" alt="" hidden />
+                </div>
+                <div class="media-main">
+                  <div class="media-sources" id="media-sources" role="tablist" aria-label="Playing in"></div>
+                  <div class="media-info">
+                    <div class="media-title" id="media-title"></div>
+                    <div class="media-artist" id="media-artist"></div>
+                    <div class="media-details" id="media-details"></div>
+                  </div>
+                  <div class="media-seek-row">
+                    <span class="media-time" id="media-elapsed">0:00</span>
+                    <input class="slider" id="media-seek" type="range" min="0" max="1" value="0" aria-label="Position in track" />
+                    <span class="media-time" id="media-length">0:00</span>
+                  </div>
+                  <div class="media-controls">
+                    <button class="media-button glass" id="media-prev" type="button" title="Previous" aria-label="Previous">
+                      <span class="icon icon-previous" aria-hidden="true"></span>
+                    </button>
+                    <button class="media-button media-play glass" id="media-play" type="button" title="Play" aria-label="Play">
+                      <span class="icon icon-play" aria-hidden="true"></span>
+                    </button>
+                    <button class="media-button glass" id="media-next" type="button" title="Next" aria-label="Next">
+                      <span class="icon icon-next" aria-hidden="true"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="media-empty" id="media-empty">
+                <span class="icon icon-music" aria-hidden="true"></span>
+                <span>Nothing playing</span>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <!-- Glances: shown in a strip along the pane's edge while it's only
+           partly open (glance.js). -->
+      <div class="glance glance-volume" aria-hidden="true">
+        <div class="volume-pop" id="volume-pop">
+          <span class="volume-pop-value" id="volume-pop-value"></span>
+          <div class="volume-pop-track"><div class="volume-pop-fill" id="volume-pop-fill"></div></div>
+        </div>
+      </div>
+      <div class="glance glance-switcher" aria-hidden="true">
+        <ol class="switcher-list" id="switcher-list" role="listbox" aria-label="Open windows"></ol>
+      </div>
+    </div>
+
+    <!-- The Pane's own settings (opened from the Settings tile in the PC quadrant). -->
+    <dialog id="settings" class="settings-dialog" aria-labelledby="settings-title">
+      <form method="dialog" class="settings-form">
+        <h2 id="settings-title" class="settings-title">Pane settings</h2>
+
+        <section class="settings-section">
+          <h3 class="group-label">Weather</h3>
+          <label class="field">
+            <span class="field-label">ZIP code</span>
+            <input id="zip" class="text-input" type="text" inputmode="numeric" maxlength="5" autocomplete="off" spellcheck="false" placeholder="e.g. 10001" />
+          </label>
+          <p class="field-error" id="zip-error" hidden>Enter a 5-digit ZIP code.</p>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="group-label">Panels</h3>
+          <label class="switch"><span>Apps</span><input type="checkbox" role="switch" data-panel="apps" /></label>
+          <label class="switch"><span>Weather</span><input type="checkbox" role="switch" data-panel="weather" /></label>
+          <label class="switch"><span>Calendar</span><input type="checkbox" role="switch" data-panel="calendar" /></label>
+          <label class="switch"><span>Music</span><input type="checkbox" role="switch" data-panel="music" /></label>
+        </section>
+
+        <div class="settings-actions">
+          <button class="button glass" type="submit">Done</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Adding a calendar event (right-click a date). -->
+    <dialog id="event-dialog" class="settings-dialog" aria-labelledby="event-dialog-title">
+      <form method="dialog" class="settings-form">
+        <div>
+          <h2 id="event-dialog-title" class="settings-title">New event</h2>
+          <p class="dialog-subtitle" id="event-date"></p>
+        </div>
+        <section class="settings-section">
+          <input id="event-title" class="text-input wide" type="text" maxlength="100" autocomplete="off" placeholder="Event name" aria-label="Event name" required />
+          <label class="switch"><span>Repeat every year</span><input id="event-yearly" type="checkbox" role="switch" /></label>
+        </section>
+        <div class="settings-actions">
+          <button class="button glass" type="submit" value="cancel" formnovalidate>Cancel</button>
+          <button class="button glass" type="submit" value="add">Add</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="backdrop.js"></script>
+    <script src="slide.js"></script>
+    <script src="motion.js"></script>
+    <script src="icons.js"></script>
+    <script src="menu.js"></script>
+    <script src="tooltip.js"></script>
+    <script src="pane-settings.js"></script>
+    <script src="apps-panel.js"></script>
+    <script src="pc-panel.js"></script>
+    <script src="holidays.js"></script>
+    <script src="weather.js"></script>
+    <script src="calendar.js"></script>
+    <script src="clock.js"></script>
+    <script src="media.js"></script>
+    <script src="search.js"></script>
+    <script src="glance.js"></script>
+    <script src="pane.js"></script>
+  </body>
+</html>

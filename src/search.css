@@ -1,0 +1,134 @@
+/* Search bar at the top of the pane, with its results list. */
+
+.search {
+  position: relative;
+  z-index: 10; /* results lie over the quadrants */
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--tile-border);
+  border-radius: var(--radius);
+  --glass-tint: var(--tile-bg);
+  --glass-filter: var(--glass-panel);
+}
+
+.search-box:focus-within {
+  border-color: transparent;
+  --glass-tint: var(--tile-bg-hover);
+}
+
+#search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-align: center;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#search-input::placeholder {
+  color: var(--text-faint);
+}
+
+.search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: var(--radius);
+  background: var(--menu-bg);
+  backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 12px 32px var(--menu-shadow);
+}
+
+/* Results slide down out of the search bar, and back up into it. The clip
+   leaves room at the sides and bottom for the shadow. */
+.search-results {
+  clip-path: inset(0 -48px -48px -48px);
+  transition:
+    opacity 140ms ease,
+    translate 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    clip-path 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    display 200ms allow-discrete;
+}
+
+.search-results[hidden] {
+  display: none;
+  opacity: 0;
+  translate: 0 -10px;
+  clip-path: inset(0 -48px 100% -48px);
+}
+
+@starting-style {
+  .search-results:not([hidden]) {
+    opacity: 0;
+    translate: 0 -10px;
+    clip-path: inset(0 -48px 100% -48px);
+  }
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+}
+
+.result[aria-selected="true"] {
+  background: var(--selected);
+}
+
+.result:hover:not([aria-selected="true"]) {
+  background: var(--hover);
+}
+
+.result-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+}
+
+/* Shown until the real icon has loaded (or if it can't be read). */
+.result-icon.placeholder {
+  background: var(--placeholder);
+}
+
+.result-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-dim);
+}
+
+.result-name mark {
+  background: none;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.search-message {
+  padding: 10px;
+  color: var(--text-dim);
+}

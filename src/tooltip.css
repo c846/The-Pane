@@ -1,0 +1,65 @@
+/* Hover tooltip (tooltip.js). */
+
+.tooltip {
+  position: fixed;
+  z-index: 90; /* under menus, over everything else */
+  max-width: 300px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--menu-bg);
+  backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 8px 24px var(--menu-shadow);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+/* Slides in and out. While it stays up (e.g. moving from day to day on the
+   weather graph) it glides to its new place instead of jumping. */
+.tooltip {
+  transition:
+    opacity 140ms ease,
+    translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    display 180ms allow-discrete;
+}
+
+.tooltip[hidden] {
+  display: none;
+  opacity: 0;
+  translate: 0 6px;
+}
+
+@starting-style {
+  .tooltip:not([hidden]) {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.tooltip-title {
+  font-weight: 600;
+}
+
+/* Title with an icon beside it (e.g. the weather for that day). */
+.tooltip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.tooltip-icon {
+  --icon-size: 28px;
+}
+
+.tooltip-row {
+  color: var(--text-dim);
+}
+
+/* A run of title + rows per item (e.g. several weather alerts). */
+.tooltip-row + .tooltip-title {
+  margin-top: 6px;
+}
