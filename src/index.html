@@ -209,7 +209,10 @@
 
         <section class="settings-section">
           <h3 class="group-label">Desktop widgets</h3>
-          <label class="switch"><span>Weather</span><input type="checkbox" role="switch" data-widget="weather" /></label>
+          <div class="field">
+            <button class="button glass" id="widgets-open" type="button">Widgets…</button>
+            <label class="switch switch-inline"><span>Lock layout</span><input id="widgets-lock" type="checkbox" role="switch" /></label>
+          </div>
         </section>
 
         <section class="settings-section">
@@ -221,6 +224,20 @@
           <p class="field-note">Needed for Windows Settings and Store apps like Calculator and Photos. Stop it again when you're done.</p>
         </section>
 
+        <div class="settings-actions">
+          <button class="button glass" type="submit">Done</button>
+        </div>
+      </form>
+
+      <!-- The Widgets button turns the settings into this: pick a widget to
+           add it to the desktop. -->
+      <form method="dialog" class="settings-form widget-picker" id="widget-picker" hidden>
+        <div class="picker-head">
+          <button class="picker-back" id="widgets-back" type="button" title="Back to settings" aria-label="Back to settings">‹</button>
+          <h2 class="settings-title">Widgets</h2>
+        </div>
+        <p class="field-note">Pick one to add it to the desktop. Drag it there to move it, or its corner to resize it.</p>
+        <ul class="widget-list" id="widget-list"></ul>
         <div class="settings-actions">
           <button class="button glass" type="submit">Done</button>
         </div>
@@ -251,6 +268,7 @@
     <script src="icons.js"></script>
     <script src="menu.js"></script>
     <script src="tooltip.js"></script>
+    <script src="shared/widget-catalog.js"></script>
     <script src="pane-settings.js"></script>
     <script src="apps-panel.js"></script>
     <script src="pc-panel.js"></script>

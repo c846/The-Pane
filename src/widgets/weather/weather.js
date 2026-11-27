@@ -6,7 +6,7 @@
 // It checks every few minutes whether the forecast is due a refresh (every
 // 30 minutes); otherwise it does nothing.
 Desktop.register({
-  id: "weather",
+  kind: "weather",
 
   create(root, settings) {
     const { invoke } = window.__TAURI__.core;

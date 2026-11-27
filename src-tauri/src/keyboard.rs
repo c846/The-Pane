@@ -1,7 +1,11 @@
 //! Keyboard handling, all on one thread:
 //!
-//! - The Home key toggles the pane (a normal RegisterHotKey hotkey; while The
-//!   Pane runs, Home is reserved for it in every app).
+//! - The Home key (a normal RegisterHotKey hotkey; while The Pane runs, Home
+//!   is reserved for it in every app): tapping it toggles the pane, holding
+//!   it (HOLD_MS) minimizes every app, showing the desktop (or, if they all
+//!   are already minimized, brings them back). Which one is only
+//!   known once it's let go or held long enough, so the pane toggles on
+//!   release.
 //! - A low-level keyboard hook that takes over keys from Windows:
 //!   - Volume keys set the volume here and show The Pane's own volume
 //!     popup, so Windows' volume flyout never appears.
@@ -34,7 +38,7 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     VK_SHIFT, VK_SPACE, VK_TAB, VK_VOLUME_DOWN, VK_VOLUME_MUTE, VK_VOLUME_UP,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, GetMessageW, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, HC_ACTION,
+    CallNextHookEx, GetMessageW, KillTimer, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, HC_ACTION,
     KBDLLHOOKSTRUCT, LLKHF_ALTDOWN, MSG, WH_KEYBOARD_LL, WM_HOTKEY, WM_KEYDOWN, WM_SYSKEYDOWN,
     WM_TIMER,
 };
@@ -52,9 +56,14 @@ const VK_MASK: u16 = 0xE8;
 pub const OUR_INPUT: usize = 0x5041_4E45;
 /// How often the hook is re-installed, in case Windows removed it.
 const REARM_EVERY_MS: u32 = 5_000;
+/// Holding Home at least this long minimizes every app instead.
+const HOLD_MS: u128 = 450;
+/// How often a pressed Home key is checked until it's let go or held.
+const HOME_POLL_MS: u32 = 25;
 
 enum Action {
     TogglePane,
+    MinimizeAll,
     Volume(VolumeKey),
     SwitcherStart { back: bool },
     SwitcherStep { back: bool },
@@ -83,6 +92,7 @@ pub fn install(app: AppHandle) {
                     pane::toggle(app);
                     crate::debug_log::log(format!("toggle took {} ms", started.elapsed().as_millis()));
                 }
+                Action::MinimizeAll => switcher::minimize_or_restore_all(app),
                 Action::Volume(key) => system::volume_key(app, key),
                 Action::SwitcherStart { back } => switcher::start(app, back),
                 Action::SwitcherStep { back } => switcher::step(app, back),
@@ -106,15 +116,32 @@ pub fn install(app: AppHandle) {
         if hook.is_null() {
             eprintln!("The Pane: could not install the keyboard hook");
         }
-        SetTimer(std::ptr::null_mut(), 0, REARM_EVERY_MS, None);
+        let rearm_timer = SetTimer(std::ptr::null_mut(), 0, REARM_EVERY_MS, None);
+        // While Home is down: when it went down, and the timer watching it.
+        let mut home: Option<(std::time::Instant, usize)> = None;
 
         let mut msg: MSG = std::mem::zeroed();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
             match msg.message {
-                WM_HOTKEY if msg.wParam == HOTKEY_ID as usize => send(Action::TogglePane),
+                WM_HOTKEY if msg.wParam == HOTKEY_ID as usize => {
+                    if home.is_none() {
+                        let timer = SetTimer(std::ptr::null_mut(), 0, HOME_POLL_MS, None);
+                        home = Some((std::time::Instant::now(), timer));
+                    }
+                }
+                // Home let go (a tap), or held long enough.
+                WM_TIMER if home.is_some_and(|(_, t)| t == msg.wParam) => {
+                    let (since, timer) = home.unwrap();
+                    let held = since.elapsed().as_millis() >= HOLD_MS;
+                    if held || !key_down(VK_HOME) {
+                        KillTimer(std::ptr::null_mut(), timer);
+                        home = None;
+                        send(if held { Action::MinimizeAll } else { Action::TogglePane });
+                    }
+                }
                 // Install a fresh hook before removing the old one, so no
                 // key slips through in between.
-                WM_TIMER => {
+                WM_TIMER if msg.wParam == rearm_timer => {
                     let fresh = install_hook();
                     if !fresh.is_null() {
                         if !hook.is_null() {

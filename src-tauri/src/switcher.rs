@@ -411,3 +411,64 @@ fn capture(h: HWND) -> Option<(i32, i32, Vec<u8>)> {
         Some((tw, th, px))
     }
 }
+
+// ---- Minimize / restore all ----------------------------------------------------
+
+/// The windows the last `minimize_or_restore_all` minimized, front to back.
+static MINIMIZED: Mutex<Vec<isize>> = Mutex::new(Vec::new());
+
+/// Holding Home (see keyboard.rs):
+/// - If any app window is open, minimize them all, showing the desktop.
+///   (Minimized windows are hidden; see desktop.rs.)
+/// - If every one is already minimized, bring them all back: the ones this
+///   minimized in their old order, the one that was in front on top.
+pub fn minimize_or_restore_all(app: &AppHandle) {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{ShowWindowAsync, SW_MINIMIZE, SW_SHOWNOACTIVATE};
+    if pane::is_open() {
+        pane::close(app);
+    }
+    unsafe extern "system" fn collect(h: HWND, list: LPARAM) -> windows_sys::core::BOOL {
+        if is_switchable(h) {
+            (*(list as *mut Vec<isize>)).push(h as isize);
+        }
+        1
+    }
+    // Front to back.
+    let mut all: Vec<isize> = Vec::new();
+    unsafe {
+        EnumWindows(Some(collect), &mut all as *mut _ as LPARAM);
+    }
+    let front = win::foreground();
+    if let Some(i) = all.iter().position(|&h| h == front) {
+        let h = all.remove(i);
+        all.insert(0, h);
+    }
+    let (minimized, open): (Vec<isize>, Vec<isize>) =
+        all.into_iter().partition(|&h| unsafe { IsIconic(h as HWND) != 0 });
+
+    let mut remembered = MINIMIZED.lock().unwrap_or_else(|e| e.into_inner());
+    unsafe {
+        if !open.is_empty() {
+            // Async: a hung app can't hold up the rest.
+            for &h in &open {
+                ShowWindowAsync(h as HWND, SW_MINIMIZE);
+            }
+            *remembered = open;
+            return;
+        }
+        // Everything's minimized. The remembered ones (still minimized)
+        // first, then any others, front to back.
+        let mut order: Vec<isize> = remembered.iter().copied().filter(|h| minimized.contains(h)).collect();
+        let others: Vec<isize> = minimized.iter().copied().filter(|h| !order.contains(h)).collect();
+        order.extend(others);
+        remembered.clear();
+        let Some((&top, rest)) = order.split_first() else {
+            return;
+        };
+        // Back to front, without taking focus; then the front one, in front.
+        for &h in rest.iter().rev() {
+            ShowWindowAsync(h as HWND, SW_SHOWNOACTIVATE);
+        }
+        win::activate_any(top);
+    }
+}

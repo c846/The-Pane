@@ -17,6 +17,7 @@ mod settings;
 mod switcher;
 mod system;
 mod weather;
+mod widgets;
 mod win;
 
 use tauri::{Manager, WindowEvent};
@@ -72,6 +73,11 @@ fn main() {
             settings::save_settings,
             weather::zip_location,
             weather::open_forecast_page,
+            widgets::get_widgets,
+            widgets::add_widget,
+            widgets::place_widget,
+            widgets::remove_widget,
+            widgets::lock_widgets,
             calendar::get_events,
             calendar::add_event,
             calendar::remove_event,

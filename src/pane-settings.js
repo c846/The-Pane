@@ -1,5 +1,5 @@
-// The Pane's own settings: wallpaper, weather ZIP code, which panels are shown
-// and which desktop widgets are shown.
+// The Pane's own settings: wallpaper, weather ZIP code, which panels are
+// shown, and the desktop widgets (adding them, and locking their layout).
 // Changes save as soon as they're made.
 //
 // Other panels can read the settings with PaneSettings.get(), or follow
@@ -12,12 +12,10 @@ window.PaneSettings = (() => {
   const zip = $("zip");
   const zipError = $("zip-error");
   const toggles = [...dialog.querySelectorAll("input[data-panel]")];
-  const widgetToggles = [...dialog.querySelectorAll("input[data-widget]")];
 
   let current = {
     zip: "",
     panels: { apps: true, weather: true, calendar: true, music: true },
-    widgets: { weather: true },
   };
   const listeners = [];
 
@@ -130,7 +128,8 @@ window.PaneSettings = (() => {
     zip.value = current.zip;
     zipError.hidden = true;
     for (const t of toggles) t.checked = current.panels[t.dataset.panel];
-    for (const t of widgetToggles) t.checked = current.widgets?.[t.dataset.widget] ?? true;
+    showSettingsView();
+    loadWidgetLock();
     dialog.showModal();
   }
 
@@ -155,12 +154,103 @@ window.PaneSettings = (() => {
     });
   }
 
-  // Desktop widgets: the desktop window hears about it from the backend.
-  for (const t of widgetToggles) {
-    t.addEventListener("change", () => {
-      save({ ...current, widgets: { ...current.widgets, [t.dataset.widget]: t.checked } });
-    });
+  // ---- Desktop widgets -------------------------------------------------------------
+  // The layout lives in the backend (widgets.rs), which tells the desktop
+  // window about every change.
+
+  const settingsView = dialog.querySelector(".settings-form:not(.widget-picker)");
+  const picker = $("widget-picker");
+  const widgetList = $("widget-list");
+  const widgetLock = $("widgets-lock");
+  const ADDED_FOR = 1500; // ms the "Added" note shows
+
+  function showSettingsView() {
+    picker.hidden = true;
+    settingsView.hidden = false;
   }
+
+  function showPicker() {
+    settingsView.hidden = true;
+    picker.hidden = false;
+    widgetList.querySelector("button")?.focus();
+  }
+
+  async function loadWidgetLock() {
+    try {
+      widgetLock.checked = (await invoke("get_widgets")).locked;
+    } catch (err) {
+      console.error("Could not load the widgets", err);
+    }
+  }
+
+  widgetLock.addEventListener("change", () => {
+    invoke("lock_widgets", { locked: widgetLock.checked }).catch((err) => {
+      console.error("Could not lock the widgets", err);
+      widgetLock.checked = !widgetLock.checked;
+    });
+  });
+
+  window.__TAURI__.event.listen("widgets-changed", (e) => {
+    widgetLock.checked = e.payload.locked;
+  });
+
+  // A small picture of a size: one square per cell.
+  function sizePicture([w, h]) {
+    const pic = document.createElement("span");
+    pic.className = "size-picture";
+    pic.style.gridTemplateColumns = `repeat(${w}, 8px)`;
+    pic.setAttribute("aria-hidden", "true");
+    for (let i = 0; i < w * h; i++) pic.append(document.createElement("span"));
+    return pic;
+  }
+
+  function buildPicker() {
+    const items = (window.WidgetCatalog ?? []).map((entry) => {
+      const [w, h] = entry.sizes[0];
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "widget-option glass";
+      const text = document.createElement("span");
+      text.className = "widget-option-text";
+      const name = document.createElement("span");
+      name.className = "widget-option-name";
+      name.textContent = entry.name;
+      const description = document.createElement("span");
+      description.className = "widget-option-description";
+      description.textContent = entry.description;
+      const sizes = document.createElement("span");
+      sizes.className = "widget-option-sizes";
+      sizes.textContent = entry.sizes.map(([sw, sh]) => `${sw}×${sh}`).join(" · ");
+      text.append(name, description, sizes);
+      const status = document.createElement("span");
+      status.className = "widget-option-status";
+      button.append(sizePicture(entry.sizes[0]), text, status);
+
+      let timer = 0;
+      button.addEventListener("click", async () => {
+        try {
+          await invoke("add_widget", { kind: entry.kind, w, h });
+          status.textContent = "Added";
+        } catch (err) {
+          console.error("Could not add the widget", err);
+          status.textContent = "Couldn't add";
+        }
+        clearTimeout(timer);
+        timer = setTimeout(() => (status.textContent = ""), ADDED_FOR);
+      });
+      li.append(button);
+      return li;
+    });
+    widgetList.replaceChildren(...items);
+  }
+
+  $("widgets-open").addEventListener("click", showPicker);
+  $("widgets-back").addEventListener("click", () => {
+    showSettingsView();
+    $("widgets-open").focus();
+  });
+  buildPicker();
 
   // Clicking the dimmed area around the dialog closes it.
   dialog.addEventListener("click", (e) => {

@@ -11,7 +11,6 @@ pub struct Settings {
     /// US ZIP code for the weather ("" = not set).
     pub zip: String,
     pub panels: Panels,
-    pub widgets: Widgets,
 }
 
 /// Which panels are shown.
@@ -32,20 +31,7 @@ impl Default for Panels {
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { zip: String::new(), panels: Panels::default(), widgets: Widgets::default() }
-    }
-}
-
-/// Which desktop widgets are shown (see src/widgets).
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Widgets {
-    pub weather: bool,
-}
-
-impl Default for Widgets {
-    fn default() -> Self {
-        Self { weather: true }
+        Self { zip: String::new(), panels: Panels::default() }
     }
 }
 

@@ -184,3 +184,122 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* Both views of the settings dialog are forms; only one shows at a time. */
+.settings-form[hidden] {
+  display: none;
+}
+
+/* A switch beside a button, on the same row. */
+.switch-inline {
+  gap: 12px;
+}
+
+/* ---- Widget picker (the Widgets button turns the settings into this) ---- */
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.picker-back {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.picker-back:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.picker-back:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.widget-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.widget-option {
+  --glass-tint: var(--tile-bg);
+  --glass-filter: var(--glass-control);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--tile-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.widget-option:hover {
+  --glass-tint: var(--tile-bg-hover);
+}
+
+.widget-option:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The default size, one small square per cell (like the desktop's grid). */
+.size-picture {
+  flex: none;
+  display: grid;
+  gap: 2px;
+}
+
+.size-picture > span {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--text-dim);
+}
+
+.widget-option-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.widget-option-name {
+  font-weight: 600;
+}
+
+.widget-option-description {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.widget-option-sizes {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.widget-option-status {
+  flex: none;
+  font-size: 12px;
+  color: var(--text-dim);
+}

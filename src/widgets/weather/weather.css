@@ -1,14 +1,28 @@
-/* Weather widget. */
+/* Weather widget. Sizes (see shared/widget-catalog.js):
+   3x2: everything; 3x1 and 2x1: just the conditions now. */
 
-.widget-weather {
-  width: 300px;
+.widget-weather .widget-body {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 12px;
   padding: 16px;
 }
 
-.widget-weather.stale .wxw-now {
+.widget-weather .widget-body[data-size="3x2"] {
+  justify-content: flex-start;
+}
+
+/* The hours sit at the bottom. */
+.widget-weather .widget-body[data-size="3x2"] .wxw-hours {
+  margin-top: auto;
+}
+
+.widget-weather .widget-body:not([data-size="3x2"]) :is(.wxw-hours, .wxw-alert) {
+  display: none;
+}
+
+.widget-weather .widget-body.stale .wxw-now {
   opacity: 0.7;
 }
 

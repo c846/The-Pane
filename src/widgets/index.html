@@ -8,10 +8,12 @@
     <link rel="stylesheet" href="weather/weather.css" />
   </head>
   <body>
-    <!-- The desktop: the wallpaper, with widgets on top (see desktop.js). -->
+    <!-- The desktop: the wallpaper, the grid (shown while arranging) and the widgets (see desktop.js). -->
     <canvas id="wallpaper" class="wallpaper" aria-hidden="true"></canvas>
+    <div id="grid" class="grid" aria-hidden="true"></div>
     <div id="widgets" class="widgets"></div>
 
+    <script src="../shared/widget-catalog.js"></script>
     <script src="desktop.js"></script>
     <!-- Shared with the pane. -->
     <script src="../shared/weather-data.js"></script>
