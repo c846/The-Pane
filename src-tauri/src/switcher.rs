@@ -5,8 +5,15 @@
 //! The pane glances open (see pane.rs) and the page lists the windows
 //! ("switcher-open"), moving the highlight on "switcher-select". It fetches
 //! each window's icon and preview with `window_icon` / `window_preview`.
+//!
+//! Holding Space down (rather than tapping it) opens the overview instead
+//! (`overview`): the pane slides on across the whole screen, showing every
+//! window in a grid ("overview-open"). It stays until a window is clicked
+//! (`overview_pick`), or Esc, Home or a click on the background closes it
+//! (`close_overview`, `overview_close`). Letting go of Alt does nothing.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use serde::Serialize;
@@ -55,6 +62,9 @@ struct State {
 
 static STATE: Mutex<State> = Mutex::new(State { active: false, windows: Vec::new(), selected: 0 });
 
+/// The overview is showing. (Read by the keyboard hook, so Esc closes it.)
+pub static OVERVIEW: AtomicBool = AtomicBool::new(false);
+
 #[derive(Clone, Serialize)]
 struct Opening {
     windows: Vec<WindowInfo>,
@@ -62,7 +72,7 @@ struct Opening {
 }
 
 pub fn start(app: &AppHandle, back: bool) {
-    if pane::is_open() {
+    if pane::is_open() || OVERVIEW.load(Ordering::SeqCst) {
         return;
     }
     let list = list_windows();
@@ -117,6 +127,62 @@ pub fn finish(app: &AppHandle) {
 pub fn cancel(app: &AppHandle) {
     STATE.lock().unwrap().active = false;
     pane::unglance(app, Glance::Switcher);
+}
+
+// ---- Overview ---------------------------------------------------------------------
+
+/// Space held down: turn the switcher into the overview. The pane slides the
+/// rest of the way across and starts taking clicks (without taking focus
+/// until clicked). Returns false if the switcher wasn't showing.
+pub fn overview(app: &AppHandle) -> bool {
+    let selected = {
+        let mut s = STATE.lock().unwrap();
+        if !s.active || !pane::is_glancing(Glance::Switcher) {
+            return false;
+        }
+        // From here on, letting go of Alt doesn't switch.
+        s.active = false;
+        s.selected
+    };
+    OVERVIEW.store(true, Ordering::SeqCst);
+    pane::glance(app, Glance::Overview);
+    win::set_click_through(pane::hwnd(), false);
+    let _ = app.emit_to("pane", "overview-open", selected);
+    true
+}
+
+/// End the overview, if it's showing: slide away, and stop taking clicks.
+fn end_overview(app: &AppHandle) -> bool {
+    if !OVERVIEW.swap(false, Ordering::SeqCst) {
+        return false;
+    }
+    win::set_click_through(pane::hwnd(), true);
+    pane::unglance(app, Glance::Overview);
+    true
+}
+
+/// Esc, Home or a click on the background: close the overview, back to the
+/// window that was in front.
+pub fn close_overview(app: &AppHandle) {
+    if end_overview(app) {
+        let front = STATE.lock().unwrap().windows.first().copied();
+        if let Some(h) = front {
+            win::activate_any(h);
+        }
+    }
+}
+
+/// A window was clicked in the overview: switch to it.
+#[tauri::command]
+pub fn overview_pick(app: AppHandle, id: isize) {
+    if listed(id) && end_overview(&app) {
+        win::activate_any(id);
+    }
+}
+
+#[tauri::command]
+pub fn overview_close(app: AppHandle) {
+    close_overview(&app);
 }
 
 // ---- Which windows -----------------------------------------------------------

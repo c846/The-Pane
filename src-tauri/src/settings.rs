@@ -5,34 +5,11 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
     /// US ZIP code for the weather ("" = not set).
     pub zip: String,
-    pub panels: Panels,
-}
-
-/// Which panels are shown.
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Panels {
-    pub apps: bool,
-    pub weather: bool,
-    pub calendar: bool,
-    pub music: bool,
-}
-
-impl Default for Panels {
-    fn default() -> Self {
-        Self { apps: true, weather: true, calendar: true, music: true }
-    }
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self { zip: String::new(), panels: Panels::default() }
-    }
 }
 
 fn file() -> Option<PathBuf> {

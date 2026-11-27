@@ -1,43 +1,18 @@
-/* The desktop window: wallpaper, and the shared look of every widget. */
-
-/* Theme follows the wallpaper (desktop.js sets data-wallpaper on <html>).
-   Dark wallpaper: white text. */
-:root,
-:root[data-wallpaper="dark"] {
-  --text: rgba(255, 255, 255, 0.92);
-  --text-dim: rgba(255, 255, 255, 0.6);
-  --text-faint: rgba(255, 255, 255, 0.4);
-  --hover: rgba(255, 255, 255, 0.06);
-  --edge: rgba(255, 255, 255, 0.12);
-  --focus: rgba(255, 255, 255, 0.7);
-  --widget-bg: rgba(255, 255, 255, 0.07);
-  --widget-border: rgba(255, 255, 255, 0.1);
-  --widget-glass: blur(18px) saturate(140%) brightness(1.04);
-  --grid-dot: rgba(255, 255, 255, 0.55);
-  --grid-fill: rgba(255, 255, 255, 0.16);
-}
-
-/* Light wallpaper: black text. */
-:root[data-wallpaper="light"] {
-  --text: rgba(0, 0, 0, 0.9);
-  --text-dim: rgba(0, 0, 0, 0.62);
-  --text-faint: rgba(0, 0, 0, 0.45);
-  --hover: rgba(0, 0, 0, 0.05);
-  --edge: rgba(0, 0, 0, 0.12);
-  --focus: rgba(0, 0, 0, 0.7);
-  --widget-bg: rgba(255, 255, 255, 0.25);
-  --widget-border: rgba(0, 0, 0, 0.08);
-  --widget-glass: blur(18px) saturate(140%) brightness(0.97);
-  --grid-dot: rgba(0, 0, 0, 0.5);
-  --grid-fill: rgba(0, 0, 0, 0.12);
-}
+/* The desktop window: the wallpaper, and how widgets look on it. The rest
+   (colours, controls, the widgets and their grid) is shared with the pane:
+   shared/theme.css and shared/widget-host.css. */
 
 :root {
-  --radius: 1px;
+  /* Widgets are glass straight on the wallpaper. */
+  --widget-tint: rgba(255, 255, 255, 0.07);
+  --widget-border: rgba(255, 255, 255, 0.1);
+  --widget-glass: blur(18px) saturate(140%) brightness(1.04);
 }
 
-* {
-  box-sizing: border-box;
+:root[data-wallpaper="light"] {
+  --widget-tint: rgba(255, 255, 255, 0.25);
+  --widget-border: rgba(0, 0, 0, 0.08);
+  --widget-glass: blur(18px) saturate(140%) brightness(0.97);
 }
 
 html,
@@ -45,7 +20,7 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: #000;
+  background: #fff; /* no wallpaper: solid white (desktop.js) */
   color: var(--text);
   font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
   font-size: 13px;
@@ -66,189 +41,62 @@ body {
   inset: 0;
 }
 
-/* The grid: one small square per cell, centered in it, shown only while a
-   widget is being moved or resized. The squares a widget would land on grow
-   to fill their cells. */
-.grid {
+/* ---- Welcome (first run only) ------------------------------------------------- */
+
+.welcome {
   position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-
-:root.arranging .grid {
-  opacity: 1;
-}
-
-.grid-cell {
-  position: absolute;
-  width: var(--cell);
-  height: var(--cell);
-  display: grid;
-  place-items: center;
-}
-
-.grid-cell::before {
-  content: "";
-  width: 6px;
-  height: 6px;
+  z-index: 50;
+  left: 50%;
+  top: 50%;
+  width: min(480px, calc(100vw - 48px));
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 28px 22px;
   border-radius: var(--radius);
-  background: var(--grid-dot);
-  transition:
-    width 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 140ms ease;
+  background: var(--menu-bg);
+  backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 16px 48px var(--menu-shadow);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  animation: welcome-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.grid-cell.on::before {
-  width: 100%;
-  height: 100%;
-  background: var(--grid-fill);
+.welcome.leaving {
+  animation: welcome-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-/* Where a widget won't fit: the squares grow only part way. */
-.grid.blocked .grid-cell.on::before {
-  width: 40%;
-  height: 40%;
-  background: var(--grid-dot);
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+    translate: -50% calc(-50% + 28px);
+  }
 }
 
-/* One widget: a glass card covering whole cells, placed by desktop.js. */
-.widget {
-  position: absolute;
-  border: 1px solid var(--widget-border);
-  border-radius: var(--radius);
-  background: var(--widget-bg);
-  backdrop-filter: var(--widget-glass);
-  cursor: default;
+@keyframes welcome-out {
+  to {
+    opacity: 0;
+    translate: -50% calc(-50% + 28px);
+  }
 }
 
-/* Snapping into place after a drag, and between sizes. */
-.widget.settling {
-  transition:
-    left 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    top 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+.welcome-title {
+  margin: 0 0 4px;
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 
-.widget.dragging {
-  z-index: 1;
-  cursor: grabbing;
-  opacity: 0.85;
-}
-
-.widget-body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* Remove (top-right) and resize (bottom-right): on hover, unless locked. */
-.widget-remove,
-.widget-resize {
-  position: absolute;
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.widget:hover .widget-remove,
-.widget:hover .widget-resize,
-.widget.resizing .widget-resize {
-  opacity: 1;
-}
-
-:root.locked .widget-remove,
-:root.locked .widget-resize,
-:root.arranging .widget-remove {
-  display: none;
-}
-
-/* An × in the top-right corner, the same size and inset as the resize
-   square in the bottom-right (8px, growing to 12px on hover). Like that,
-   the button itself is a larger, invisible target. */
-.widget-remove {
-  --x: 8px;
-  top: 0;
-  right: 0;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  background: transparent;
+.welcome-text {
+  margin: 0;
   color: var(--text-dim);
 }
 
-.widget-remove:hover {
-  --x: 12px;
-  color: var(--text);
-}
-
-/* The ×: two crossed lines, drawn rather than typed so it's exactly square
-   (a font's × never quite is). Each spans the diagonal of a --x square whose
-   corner is 4px in from the widget's, like the resize square's. */
-.widget-remove::before,
-.widget-remove::after {
-  content: "";
-  position: absolute;
-  top: calc(4px + var(--x) / 2);
-  right: calc(4px + var(--x) / 2);
-  width: calc(var(--x) * 1.4142);
-  height: 1.5px;
-  background: currentColor;
-  translate: 50% -50%;
-  rotate: 45deg;
-  transition:
-    top 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    right 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 120ms ease;
-}
-
-.widget-remove::after {
-  rotate: -45deg;
-}
-
-/* A little square in the bottom-right corner; it grows a bit on hover and
-   while resizing. The element itself is a larger, invisible target, so it's
-   easy to grab. */
-.widget-resize {
-  right: 0;
-  bottom: 0;
-  width: 22px;
-  height: 22px;
-  cursor: nwse-resize;
-}
-
-.widget-resize::before {
-  content: "";
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius);
-  background: var(--text-dim);
-  transition:
-    width 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 120ms ease;
-}
-
-.widget-resize:hover::before,
-.widget.resizing .widget-resize::before {
-  width: 12px;
-  height: 12px;
-  background: var(--text);
-}
-
-button {
-  font: inherit;
-  color: inherit;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
+.welcome-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }

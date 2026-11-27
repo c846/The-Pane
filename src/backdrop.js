@@ -26,7 +26,7 @@ window.Backdrop = (() => {
     url = null;
     if (!bytes || bytes.byteLength === 0) {
       el.style.backgroundImage = "none";
-      setTheme(false); // plain dark background
+      setTheme(true); // no wallpaper: solid white
       return;
     }
     url = URL.createObjectURL(new Blob([bytes]));

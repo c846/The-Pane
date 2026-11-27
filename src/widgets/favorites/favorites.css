@@ -1,0 +1,61 @@
+/* Favorites (and Recent, which looks the same): a small heading, then one
+   tile per cell. */
+
+:is(.widget-favorites, .widget-recent) .widget-body {
+  gap: 6px;
+  padding: 8px 10px 10px;
+}
+
+:is(.widget-favorites, .widget-recent) .group-label {
+  margin: 0;
+  padding-left: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-tiles {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 8px;
+}
+
+/* Each tile sizes what it shows to itself: on a small screen, where a
+   one-row widget's tiles are too short for an icon and a name, just the
+   icon (the name is still in its tooltip). */
+.app-tiles > .tile {
+  container-type: size;
+}
+
+@container (max-height: 84px) {
+  .app-tiles .tile-label {
+    display: none;
+  }
+}
+
+.app-tiles-message {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  font-size: 12px;
+}
+
+/* The "more" tile: one of the other favorites at a time, in a window the
+   same size as an icon, so they can slide in and out of it. */
+.more-carousel {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+.more-icon {
+  position: absolute;
+  inset: 0;
+}
+
+.more-tile .tile-label {
+  color: var(--text-dim);
+}

@@ -164,6 +164,7 @@ pub fn launch_app(app: AppHandle, id: String) -> Result<(), String> {
         return Err("Unknown app".into());
     }
     library::record_launch(&id);
+    library::changed(&app);
     shell_open_from_pane(&app, &format!("shell:AppsFolder\\{id}"));
     Ok(())
 }

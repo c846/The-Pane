@@ -232,6 +232,12 @@ fn set_wallpaper(path: &str) -> bool {
     unsafe { SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, wide.as_mut_ptr() as *mut _, flags) != 0 }
 }
 
+/// No wallpaper at all (a fresh install): the desktop and the pane show
+/// solid white.
+pub fn clear_wallpaper() {
+    set_wallpaper("");
+}
+
 /// Identifies the current wallpaper (path + last-modified time), so the page
 /// only reloads the image when it actually changed. Empty if there is none.
 #[tauri::command]

@@ -11,7 +11,9 @@
 //!     popup, so Windows' volume flyout never appears.
 //!   - Alt+Space opens The Pane's window switcher (see switcher.rs): keep
 //!     holding Alt and press Space to move on (Shift+Space moves back), let
-//!     go of Alt to switch, Esc to cancel.
+//!     go of Alt to switch, Esc to cancel. Holding Space down (HOLD_MS)
+//!     opens the overview instead: every window in a grid, picked with the
+//!     mouse; Esc or Home closes it.
 //!   - Windows shortcuts are swallowed: the Windows key (and so every Win+…
 //!     shortcut), Alt+Tab, Alt+Esc and Ctrl+Esc. Ctrl+Shift+Esc (Task
 //!     Manager) is left alone: with no Windows shell, it's the way out.
@@ -24,7 +26,7 @@
 //! pane, is handed to a worker thread. As a safety net the hook is also
 //! re-installed every few seconds, since Windows never says it removed one.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::OnceLock;
 use std::thread;
@@ -56,7 +58,8 @@ const VK_MASK: u16 = 0xE8;
 pub const OUR_INPUT: usize = 0x5041_4E45;
 /// How often the hook is re-installed, in case Windows removed it.
 const REARM_EVERY_MS: u32 = 5_000;
-/// Holding Home at least this long minimizes every app instead.
+/// Holding Home at least this long minimizes every app instead; holding
+/// Space (with Alt) this long opens the window overview.
 const HOLD_MS: u128 = 450;
 /// How often a pressed Home key is checked until it's let go or held.
 const HOME_POLL_MS: u32 = 25;
@@ -69,6 +72,10 @@ enum Action {
     SwitcherStep { back: bool },
     SwitcherFinish,
     SwitcherCancel,
+    /// Alt+Space press number `press`: if Space is still down HOLD_MS
+    /// later, open the overview.
+    SpaceHeld { press: u64 },
+    OverviewClose,
 }
 
 static ACTIONS: OnceLock<Sender<Action>> = OnceLock::new();
@@ -76,6 +83,8 @@ static ACTIONS: OnceLock<Sender<Action>> = OnceLock::new();
 static SWITCHING: AtomicBool = AtomicBool::new(false);
 /// A Space press was swallowed; swallow its release too.
 static SPACE_DOWN: AtomicBool = AtomicBool::new(false);
+/// Counts Alt+Space presses, so a hold check knows if it's still the same press.
+static SPACE_PRESSES: AtomicU64 = AtomicU64::new(0);
 
 pub fn install(app: AppHandle) {
     let (tx, rx) = channel::<Action>();
@@ -87,17 +96,33 @@ pub fn install(app: AppHandle) {
         for action in rx {
             let app = &worker_app;
             match action {
+                // Home closes the overview rather than opening the pane.
+                Action::TogglePane if switcher::OVERVIEW.load(Ordering::SeqCst) => switcher::close_overview(app),
                 Action::TogglePane => {
                     let started = std::time::Instant::now();
                     pane::toggle(app);
                     crate::debug_log::log(format!("toggle took {} ms", started.elapsed().as_millis()));
                 }
-                Action::MinimizeAll => switcher::minimize_or_restore_all(app),
+                Action::MinimizeAll => {
+                    switcher::close_overview(app);
+                    switcher::minimize_or_restore_all(app);
+                }
                 Action::Volume(key) => system::volume_key(app, key),
                 Action::SwitcherStart { back } => switcher::start(app, back),
                 Action::SwitcherStep { back } => switcher::step(app, back),
                 Action::SwitcherFinish => switcher::finish(app),
                 Action::SwitcherCancel => switcher::cancel(app),
+                Action::SpaceHeld { press } => {
+                    let app = app.clone();
+                    thread::spawn(move || {
+                        thread::sleep(std::time::Duration::from_millis(HOLD_MS as u64));
+                        let same_press = SPACE_PRESSES.load(Ordering::SeqCst) == press;
+                        if same_press && SPACE_DOWN.load(Ordering::SeqCst) && SWITCHING.swap(false, Ordering::SeqCst) {
+                            switcher::overview(&app);
+                        }
+                    });
+                }
+                Action::OverviewClose => switcher::close_overview(app),
             }
         }
     });
@@ -240,14 +265,19 @@ fn swallow(vk: u16, msg: u32, flags: u32) -> bool {
                 SPACE_DOWN.store(false, Ordering::SeqCst);
                 return true;
             }
-            SPACE_DOWN.store(true, Ordering::SeqCst);
+            // Holding Space repeats the press; only the first one counts.
+            let repeat = SPACE_DOWN.swap(true, Ordering::SeqCst);
             if alt {
                 mask_alt();
-                let back = key_down(VK_SHIFT);
-                if SWITCHING.swap(true, Ordering::SeqCst) {
-                    send(Action::SwitcherStep { back });
-                } else {
-                    send(Action::SwitcherStart { back });
+                if !repeat && !switcher::OVERVIEW.load(Ordering::SeqCst) {
+                    let back = key_down(VK_SHIFT);
+                    if SWITCHING.swap(true, Ordering::SeqCst) {
+                        send(Action::SwitcherStep { back });
+                    } else {
+                        send(Action::SwitcherStart { back });
+                    }
+                    let press = SPACE_PRESSES.fetch_add(1, Ordering::SeqCst) + 1;
+                    send(Action::SpaceHeld { press });
                 }
             }
             true
@@ -257,6 +287,17 @@ fn swallow(vk: u16, msg: u32, flags: u32) -> bool {
         VK_TAB if alt => {
             if down {
                 mask_alt();
+            }
+            true
+        }
+
+        // Esc closes the overview (with or without Alt).
+        VK_ESCAPE if switcher::OVERVIEW.load(Ordering::SeqCst) => {
+            if down {
+                if alt {
+                    mask_alt();
+                }
+                send(Action::OverviewClose);
             }
             true
         }

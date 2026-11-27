@@ -40,7 +40,7 @@
         "resizable": false,
         "alwaysOnBottom": true,
         "skipTaskbar": true,
-        "backgroundColor": "#000000"
+        "backgroundColor": "#ffffff"
       }
     ],
     "security": {

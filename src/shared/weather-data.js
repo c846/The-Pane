@@ -1,14 +1,16 @@
-// Weather data from weather.gov, shared by the pane's weather panel and the
-// desktop weather widget.
+// Weather data from weather.gov, shared by every weather widget (in the pane
+// and on the desktop).
 //
 // The forecast is cached in localStorage. Both windows share it, so when
-// either one downloads a new forecast, the other hears about it through
-// onUpdate and shows it without downloading again.
+// any widget downloads a new forecast, every other one hears about it
+// through onUpdate and shows it without downloading again.
 //
 //   WeatherData.cached(zip)    the cached forecast for that ZIP code, or null
-//   WeatherData.download(zip)  download a fresh forecast (and cache it)
+//   WeatherData.download(zip)  download a fresh forecast (and cache it); a
+//                              download already under way is shared
 //   WeatherData.isStale(data)  older than REFRESH_AFTER?
-//   WeatherData.onUpdate(fn)   fn(data) when the other window cached a new one
+//   WeatherData.onUpdate(fn)   fn(data) whenever a new forecast is cached, in
+//                              this window or the other; returns an unsubscribe
 //   WeatherData.iconUrl(text, isDay)  CSS url() of the icon for a forecast
 window.WeatherData = (() => {
   const { invoke } = window.__TAURI__.core;
@@ -61,7 +63,23 @@ window.WeatherData = (() => {
     return point;
   }
 
-  async function download(zip) {
+  const listeners = new Set();
+  const inFlight = new Map(); // zip -> Promise
+
+  function download(zip) {
+    if (!inFlight.has(zip)) {
+      const p = fetchForecast(zip)
+        .then((data) => {
+          for (const fn of listeners) fn(data);
+          return data;
+        })
+        .finally(() => inFlight.delete(zip));
+      inFlight.set(zip, p);
+    }
+    return inFlight.get(zip);
+  }
+
+  async function fetchForecast(zip) {
     const point = await pointFor(zip);
     const [daily, hourly, alerts] = await Promise.all([
       getJson(point.forecast),
@@ -92,15 +110,22 @@ window.WeatherData = (() => {
 
   const isStale = (data) => !data || Date.now() - data.at >= REFRESH_AFTER;
 
-  // Fires only for changes made by the other window.
   function onUpdate(fn) {
-    window.addEventListener("storage", (e) => {
-      if (e.key !== CACHE_KEY || !e.newValue) return;
-      try {
-        fn(JSON.parse(e.newValue));
-      } catch {}
-    });
+    listeners.add(fn);
+    return () => listeners.delete(fn);
   }
+
+  // The other window cached a new forecast.
+  window.addEventListener("storage", (e) => {
+    if (e.key !== CACHE_KEY || !e.newValue) return;
+    let data;
+    try {
+      data = JSON.parse(e.newValue);
+    } catch {
+      return;
+    }
+    for (const fn of listeners) fn(data);
+  });
 
   // Pick one of the icons in the icons folder from weather.gov's description,
   // e.g. "Chance Rain Showers then Mostly Cloudy" -> rainy.

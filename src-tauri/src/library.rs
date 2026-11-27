@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
 
 use crate::apps::{self, App};
 
@@ -44,6 +45,12 @@ fn save(lists: &Lists) {
     if std::fs::write(&tmp, json).is_ok() {
         let _ = std::fs::rename(&tmp, &path);
     }
+}
+
+/// Tell every window (the pane's and the desktop's app widgets) that the
+/// lists changed.
+pub fn changed(app: &AppHandle) {
+    let _ = app.emit("apps-changed", ());
 }
 
 /// Run `f` on the lists, saving afterwards.
@@ -89,7 +96,7 @@ pub async fn app_lists() -> AppLists {
 }
 
 #[tauri::command]
-pub fn set_favorite(id: String, favorite: bool) -> Result<(), String> {
+pub fn set_favorite(app: AppHandle, id: String, favorite: bool) -> Result<(), String> {
     if favorite && !apps::exists(&id) {
         return Err("Unknown app".into());
     }
@@ -101,12 +108,13 @@ pub fn set_favorite(id: String, favorite: bool) -> Result<(), String> {
             l.favorites.retain(|f| f != &id);
         }
     });
+    changed(&app);
     Ok(())
 }
 
 /// Move a favorite to a new position (0 = first).
 #[tauri::command]
-pub fn move_favorite(id: String, index: usize) {
+pub fn move_favorite(app: AppHandle, id: String, index: usize) {
     update(|l| {
         if let Some(from) = l.favorites.iter().position(|f| f == &id) {
             let item = l.favorites.remove(from);
@@ -114,9 +122,11 @@ pub fn move_favorite(id: String, index: usize) {
             l.favorites.insert(to, item);
         }
     });
+    changed(&app);
 }
 
 #[tauri::command]
-pub fn forget_recent(id: String) {
+pub fn forget_recent(app: AppHandle, id: String) {
     update(|l| l.recent.retain(|r| r != &id));
+    changed(&app);
 }

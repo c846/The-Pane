@@ -1,0 +1,96 @@
+/* Volume and Brightness: a heading, then icon, slider and value in a row.
+   At 1x1 the slider drops below the icon and value. */
+
+:is(.widget-volume, .widget-brightness) .widget-body {
+  justify-content: space-between;
+  padding: 10px 12px 14px;
+}
+
+:is(.widget-volume, .widget-brightness) .group-label {
+  margin: 0;
+}
+
+.level-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* The icon at the start (the volume one doubles as mute). */
+.level-icon {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  --icon-size: 20px;
+  /* No glass until hovered. */
+  --glass-tint: transparent;
+  --glass-filter: none;
+}
+
+button.level-icon:hover {
+  --glass-tint: var(--tile-bg);
+  --glass-filter: var(--glass-control);
+}
+
+button.level-icon:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.level-icon .sun {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.level-value {
+  flex: none;
+  width: 28px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+/* Muted: icon and slider fade out. */
+.widget-volume .widget-body.muted :is(.icon-volume, .slider, .level-value) {
+  opacity: 0.4;
+}
+
+/* 1x1: icon and value up top, the slider across the bottom. */
+:is(.widget-volume, .widget-brightness) .widget-body[data-size="1x1"] .level-row {
+  flex-wrap: wrap;
+  gap: 6px 4px;
+}
+
+:is(.widget-volume, .widget-brightness) .widget-body[data-size="1x1"] .slider {
+  flex-basis: 100%;
+  order: 2;
+}
+
+:is(.widget-volume, .widget-brightness) .widget-body[data-size="1x1"] .level-value {
+  width: auto;
+  margin-left: auto;
+  font-size: 20px;
+}
+
+/* Nothing to control: just say so. */
+:is(.widget-volume, .widget-brightness) .widget-message {
+  display: none;
+  font-size: 12px;
+}
+
+:is(.widget-volume, .widget-brightness) .widget-body.unavailable .widget-message {
+  display: flex;
+}
+
+:is(.widget-volume, .widget-brightness) .widget-body.unavailable .level-row {
+  display: none;
+}

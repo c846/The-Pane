@@ -7,6 +7,7 @@ mod debug_log;
 mod desktop;
 mod edge;
 mod explorer;
+mod first_run;
 mod frame;
 mod instance;
 mod keyboard;
@@ -87,10 +88,15 @@ fn main() {
             media::media_seek,
             switcher::window_icon,
             switcher::window_preview,
+            switcher::overview_pick,
+            switcher::overview_close,
+            first_run::welcome,
+            first_run::welcome_done,
             quit_app
         ])
         .setup(|app| {
             let handle = app.handle().clone();
+            first_run::check();
             pane::init(&handle)?;
             desktop::init(&handle);
             frame::start();

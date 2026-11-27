@@ -29,7 +29,8 @@ window.Slide = (() => {
   // fraction of the gap per millisecond (an exponential glide, ~45ms).
   const FOLLOW_MS = 45;
   // How far a glance opens the pane (CSS px), and how long that takes.
-  const GLANCE_WIDTH = { volume: 42, switcher: 380 };
+  // The overview goes all the way across (goal() caps it at the screen).
+  const GLANCE_WIDTH = { volume: 42, switcher: 380, overview: Infinity };
   const GLANCE_MS = 300;
 
   const easeOut = (t) => 1 - Math.pow(1 - t, 4);

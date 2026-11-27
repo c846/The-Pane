@@ -13,7 +13,8 @@
 //!            slides it back a little (and enough pushing closes it).
 //! - GLANCE:  partly open to show something brief without the full pane:
 //!            the volume popup or the Alt+Space window switcher. Unfocused
-//!            and click-through, like PEEK.
+//!            and click-through, like PEEK. (The switcher's overview slides
+//!            all the way across and takes clicks; see switcher.rs.)
 //! - CLOSING: sliding away (after closing, or when a peek or glance retracts).
 //!            Click-through; hidden once the slide is over, unless it is
 //!            opened or peeked again first.
@@ -50,6 +51,8 @@ const GLANCE: u8 = 4;
 pub enum Glance {
     Volume = 1,
     Switcher = 2,
+    /// Every open window in a grid, covering the screen (Alt + held Space).
+    Overview = 3,
 }
 
 static MODE: AtomicU8 = AtomicU8::new(HIDDEN);

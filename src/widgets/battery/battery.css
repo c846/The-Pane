@@ -1,0 +1,68 @@
+/* Battery: the percentage, a bar filled to it, and what it's doing. */
+
+.widget-battery .widget-body {
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.battery-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.battery-percent {
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.battery-saver {
+  --icon-size: 18px;
+  color: var(--text-dim);
+}
+
+.battery-saver[hidden] {
+  display: none;
+}
+
+.battery-bar {
+  height: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--edge-strong);
+  overflow: hidden;
+}
+
+.battery-fill {
+  height: 100%;
+  background: var(--text);
+  transition: width 300ms ease;
+}
+
+.battery-status {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* Low and not plugged in. */
+.widget-battery .widget-body.low :is(.battery-percent, .battery-status) {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.widget-battery .widget-message {
+  display: none;
+  font-size: 12px;
+}
+
+.widget-battery .widget-body.unavailable .widget-message {
+  display: flex;
+}
+
+.widget-battery .widget-body.unavailable > :not(.widget-message) {
+  display: none;
+}

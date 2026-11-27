@@ -1,0 +1,182 @@
+/* Calendar: the month's title between ‹ ›, weekday names, then six weeks
+   sharing the rest of the height. */
+
+.widget-calendar .widget-body {
+  gap: 6px;
+  padding: 12px 14px 14px;
+}
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cal-title,
+.cal-arrow {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.cal-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.cal-arrow {
+  flex: none;
+  width: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-dim);
+}
+
+/* Drawn chevrons rather than text arrows, so they sit exactly centred.
+   28px buttons and 12px chevrons stay on whole pixels at 100% and 150%. */
+.chevron {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cal-title:hover,
+.cal-arrow:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.cal-title:focus-visible,
+.cal-arrow:focus-visible,
+.cal-day:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* Weekday names, then 6 weeks that share the remaining height. */
+.cal-grid {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+/* The weeks of a month. While changing month the old and new ones overlap
+   here, sliding past each other. */
+.cal-pages {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cal-page {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.cal-page.leaving {
+  pointer-events: none;
+}
+
+.cal-weekday {
+  padding-bottom: 4px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.cal-day {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: var(--radius);
+  outline: none;
+  transition: background-color 160ms ease;
+}
+
+.cal-day:hover {
+  background: var(--hover);
+}
+
+.cal-num {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-day.other-month .cal-num {
+  color: var(--text-faint);
+}
+
+.cal-day.today {
+  background: var(--selected);
+}
+
+.cal-day.today .cal-num {
+  font-weight: 700;
+}
+
+/* Little squares under the date: holidays and your own events, in the
+   text colour (white or black). */
+.cal-marks {
+  display: flex;
+  gap: 2px;
+  min-height: 5px;
+}
+
+.cal-mark {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+}
+
+.cal-day.other-month .cal-mark {
+  opacity: 0.5;
+}
+
+/* The "New event" dialog (pane only; it borrows the settings dialog's look). */
+.dialog-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.text-input.wide {
+  width: 100%;
+}
+
+#event-dialog .settings-actions {
+  gap: 8px;
+}
