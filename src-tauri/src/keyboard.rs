@@ -9,7 +9,8 @@
 //!     holding Alt and press Space to move on (Shift+Space moves back), let
 //!     go of Alt to switch, Esc to cancel.
 //!   - Windows shortcuts are swallowed: the Windows key (and so every Win+…
-//!     shortcut), Alt+Tab, Alt+Esc, Ctrl+Esc and Ctrl+Shift+Esc.
+//!     shortcut), Alt+Tab, Alt+Esc and Ctrl+Esc. Ctrl+Shift+Esc (Task
+//!     Manager) is left alone: with no Windows shell, it's the way out.
 //!     Ctrl+Alt+Del can't be intercepted, so it always still works.
 //!
 //! The hook must answer quickly: if it ever keeps Windows waiting (about
@@ -248,8 +249,9 @@ fn swallow(vk: u16, msg: u32, flags: u32) -> bool {
                 }
                 true
             } else {
-                // Ctrl+Esc (Start) and Ctrl+Shift+Esc (Task Manager).
-                key_down(VK_CONTROL)
+                // Ctrl+Esc (Start), but never Ctrl+Shift+Esc: with no
+                // Windows shell, Task Manager is the way out.
+                key_down(VK_CONTROL) && !key_down(VK_SHIFT)
             }
         }
 

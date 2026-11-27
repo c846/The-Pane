@@ -30,7 +30,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     MSG, WM_INPUT, WNDCLASSW,
 };
 
-use crate::{pane, taskbar, win};
+use crate::{pane, win};
 
 const POLL_INTERVAL: Duration = Duration::from_millis(15);
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
@@ -90,7 +90,6 @@ pub fn start(app: AppHandle) {
         loop {
             if last_refresh.map_or(true, |t| t.elapsed() >= REFRESH_INTERVAL) {
                 screen = read_screen(&app).or(screen);
-                taskbar::enforce();
                 last_refresh = Some(Instant::now());
             }
             if let Some(s) = screen {

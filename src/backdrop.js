@@ -71,5 +71,14 @@ window.Backdrop = (() => {
   }
 
   refresh();
-  return { refresh };
+  return {
+    refresh,
+    // The wallpaper as an object URL (null if none), and its file path.
+    get url() {
+      return url;
+    },
+    get path() {
+      return key ? key.slice(0, key.lastIndexOf("|")) : "";
+    },
+  };
 })();

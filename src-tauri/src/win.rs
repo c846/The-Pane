@@ -3,10 +3,8 @@
 
 use std::sync::OnceLock;
 
-use windows_sys::core::BOOL;
 use windows_sys::Win32::Foundation::{HWND, POINT};
 use windows_sys::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_TRANSITIONS_FORCEDISABLED};
-use windows_sys::Win32::System::Console::SetConsoleCtrlHandler;
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     GetAsyncKeyState, MapVirtualKeyW, SendInput, INPUT, INPUT_KEYBOARD, KEYEVENTF_EXTENDEDKEY,
     KEYEVENTF_KEYUP, MAPVK_VK_TO_VSC, VK_LBUTTON, VK_LMENU, VK_MENU,
@@ -231,19 +229,3 @@ pub fn left_button_down() -> bool {
 }
 
 
-static CONSOLE_CLOSE: OnceLock<fn()> = OnceLock::new();
-
-unsafe extern "system" fn console_handler(_ctrl_type: u32) -> BOOL {
-    if let Some(f) = CONSOLE_CLOSE.get() {
-        f();
-    }
-    0 // let the default handler terminate the process
-}
-
-/// Run `f` when the console is closed or Ctrl+C is pressed (useful in dev).
-pub fn on_console_close(f: fn()) {
-    let _ = CONSOLE_CLOSE.set(f);
-    unsafe {
-        SetConsoleCtrlHandler(Some(console_handler), 1);
-    }
-}

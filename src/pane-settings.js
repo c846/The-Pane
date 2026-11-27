@@ -1,4 +1,5 @@
-// The Pane's own settings: weather ZIP code and which panels are shown.
+// The Pane's own settings: wallpaper, weather ZIP code, which panels are shown
+// and which desktop widgets are shown.
 // Changes save as soon as they're made.
 //
 // Other panels can read the settings with PaneSettings.get(), or follow
@@ -11,8 +12,13 @@ window.PaneSettings = (() => {
   const zip = $("zip");
   const zipError = $("zip-error");
   const toggles = [...dialog.querySelectorAll("input[data-panel]")];
+  const widgetToggles = [...dialog.querySelectorAll("input[data-widget]")];
 
-  let current = { zip: "", panels: { apps: true, weather: true, calendar: true, music: true } };
+  let current = {
+    zip: "",
+    panels: { apps: true, weather: true, calendar: true, music: true },
+    widgets: { weather: true },
+  };
   const listeners = [];
 
   // Show or hide quadrants to match the panel switches. Weather and calendar
@@ -47,10 +53,84 @@ window.PaneSettings = (() => {
     apply();
   }
 
+  const preview = $("wallpaper-preview");
+  const wallpaperName = $("wallpaper-name");
+  const wallpaperError = $("wallpaper-error");
+  const chooseWallpaper = $("wallpaper-choose");
+
+  function showWallpaper() {
+    const { url, path } = window.Backdrop;
+    preview.style.backgroundImage = url ? `url("${url}")` : "none";
+    // Windows keeps a converted copy called "TranscodedWallpaper"; its name means nothing.
+    const name = path.split("\\").pop();
+    wallpaperName.textContent = !path ? "No wallpaper" : /^TranscodedWallpaper/i.test(name) ? "Current wallpaper" : name;
+  }
+
+  chooseWallpaper.addEventListener("click", async () => {
+    wallpaperError.hidden = true;
+    chooseWallpaper.disabled = true;
+    try {
+      if (await invoke("pick_wallpaper")) {
+        await window.Backdrop.refresh();
+        showWallpaper();
+      }
+    } catch (err) {
+      wallpaperError.textContent = String(err);
+      wallpaperError.hidden = false;
+    } finally {
+      chooseWallpaper.disabled = false;
+    }
+  });
+
+  // Windows shell (Explorer): started on demand, for Windows Settings and
+  // Store apps. The backend says when it starts or stops, however that happens.
+  const shellStatus = $("shell-status");
+  const shellToggle = $("shell-toggle");
+  let shellRunning = false;
+  let shellBusy = false;
+
+  function showShell() {
+    shellStatus.textContent = shellBusy
+      ? shellRunning
+        ? "Stopping…"
+        : "Starting…"
+      : shellRunning
+        ? "Running"
+        : "Not running";
+    shellToggle.textContent = shellRunning ? "Stop" : "Start";
+    shellToggle.disabled = shellBusy;
+  }
+
+  shellToggle.addEventListener("click", async () => {
+    shellBusy = true;
+    showShell();
+    try {
+      await invoke(shellRunning ? "stop_windows_shell" : "start_windows_shell");
+      shellRunning = await invoke("windows_shell_running");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      shellBusy = false;
+      showShell();
+    }
+  });
+
+  window.__TAURI__.event.listen("windows-shell-changed", (e) => {
+    shellRunning = e.payload;
+    showShell();
+  });
+
   function open() {
+    invoke("windows_shell_running").then((running) => {
+      shellRunning = running;
+      showShell();
+    });
+    showWallpaper();
+    wallpaperError.hidden = true;
     zip.value = current.zip;
     zipError.hidden = true;
     for (const t of toggles) t.checked = current.panels[t.dataset.panel];
+    for (const t of widgetToggles) t.checked = current.widgets?.[t.dataset.widget] ?? true;
     dialog.showModal();
   }
 
@@ -72,6 +152,13 @@ window.PaneSettings = (() => {
   for (const t of toggles) {
     t.addEventListener("change", () => {
       save({ ...current, panels: { ...current.panels, [t.dataset.panel]: t.checked } });
+    });
+  }
+
+  // Desktop widgets: the desktop window hears about it from the backend.
+  for (const t of widgetToggles) {
+    t.addEventListener("change", () => {
+      save({ ...current, widgets: { ...current.widgets, [t.dataset.widget]: t.checked } });
     });
   }
 

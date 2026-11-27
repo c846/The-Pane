@@ -28,7 +28,6 @@ use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, AtomicU64, AtomicU8,
 use std::thread;
 use std::time::Duration;
 
-use tauri::ipc::Response;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{apps, win};
@@ -64,6 +63,14 @@ static PANE_HWND: AtomicIsize = AtomicIsize::new(0);
 static PREVIOUS: AtomicIsize = AtomicIsize::new(0);
 /// Last slide amount sent to the page (f32 bits), to skip repeats.
 static LAST_SENT: AtomicU32 = AtomicU32::new(u32::MAX);
+
+/// While set, the pane stays open even though it isn't in front (e.g. while
+/// a file picker it opened is showing).
+static HELD_OPEN: AtomicBool = AtomicBool::new(false);
+
+pub fn hold_open(on: bool) {
+    HELD_OPEN.store(on, Ordering::SeqCst);
+}
 
 pub fn is_open() -> bool {
     MODE.load(Ordering::SeqCst) == OPEN
@@ -251,7 +258,7 @@ pub fn close(app: &AppHandle) {
     // Lets the page slide out and stop work it only does while open.
     let _ = app.emit_to("pane", "pane-closing", ());
     // Give focus back to the app the user was in, rather than letting
-    // Windows pick (with the taskbar hidden it can land on the shell).
+    // Windows pick (it can land on the bare desktop).
     let was_front = h == win::foreground();
     let prev = PREVIOUS.swap(0, Ordering::SeqCst);
     if was_front && prev != 0 {
@@ -273,7 +280,7 @@ pub fn close_if_not_foreground(app: &AppHandle) {
     let app = app.clone();
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(50));
-        if !is_open() || !REVEALED.load(Ordering::SeqCst) {
+        if !is_open() || !REVEALED.load(Ordering::SeqCst) || HELD_OPEN.load(Ordering::SeqCst) {
             return;
         }
         if win::foreground() != hwnd() {
@@ -293,30 +300,6 @@ pub fn toggle(app: &AppHandle) {
 #[tauri::command]
 pub fn hide_pane(app: AppHandle) {
     close(&app);
-}
-
-/// Identifies the current wallpaper (path + last-modified time), so the page
-/// only reloads the image when it actually changed. Empty if there is none.
-#[tauri::command]
-pub fn wallpaper_key() -> String {
-    let Some(path) = win::wallpaper_path() else {
-        return String::new();
-    };
-    let modified = std::fs::metadata(&path)
-        .and_then(|m| m.modified())
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map_or(0, |d| d.as_millis());
-    format!("{path}|{modified}")
-}
-
-/// The wallpaper image file's bytes. Empty if there is none.
-#[tauri::command]
-pub fn get_wallpaper() -> Response {
-    let data = win::wallpaper_path()
-        .and_then(|p| std::fs::read(p).ok())
-        .unwrap_or_default();
-    Response::new(data)
 }
 
 /// Called by the page once the background is drawn; the page slides the

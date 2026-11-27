@@ -32,7 +32,7 @@ use windows_sys::Win32::Foundation::{LPARAM, RECT};
 use windows_sys::Win32::Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR};
 
 use crate::pane::Glance;
-use crate::{apps, pane};
+use crate::pane;
 
 // ---- COM worker thread ----------------------------------------------------------
 
@@ -438,25 +438,16 @@ pub fn power(app: AppHandle, action: String) -> Result<(), String> {
         "sleep" => unsafe {
             SetSuspendState(false, false, false);
         },
-        // Leaving Windows: give the user their taskbar and notification settings back first.
         "signout" => unsafe {
-            crate::restore_windows();
             ExitWindowsEx(EWX_LOGOFF, SHTDN_REASON_FLAG_PLANNED);
         },
         "restart" => {
-            crate::restore_windows();
             shutdown(&["/r", "/t", "0"])?;
         }
         "shutdown" => {
-            crate::restore_windows();
             shutdown(&["/s", "/t", "0"])?;
         }
         _ => return Err(format!("Unknown power action: {action}")),
     }
     Ok(())
-}
-
-#[tauri::command]
-pub fn open_windows_settings(app: AppHandle) {
-    apps::shell_open_from_pane(&app, "ms-settings:");
 }

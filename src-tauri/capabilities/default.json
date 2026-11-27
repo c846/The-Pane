@@ -1,9 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the pane window",
+  "description": "Permissions for the pane and desktop windows",
   "windows": [
-    "pane"
+    "pane",
+    "desktop"
   ],
   "permissions": [
     "core:default"

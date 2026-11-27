@@ -6,21 +6,19 @@
 //           hover over the graph for the nearest day's details. Each time the
 //           pane opens the line draws itself in, then the squares pop up.
 //
-// The ZIP code comes from Pane settings. Forecasts are cached (also across
-// restarts) and refreshed when the pane opens, at most every 30 minutes.
+// The ZIP code comes from Pane settings. The forecast itself comes from
+// WeatherData (shared/weather-data.js), which caches it (also across
+// restarts and with the desktop widget); it's refreshed when the pane
+// opens, at most every 30 minutes.
 window.WeatherPanel = (() => {
   const { invoke } = window.__TAURI__.core;
   const $ = (id) => document.getElementById(id);
 
-  const API = "https://api.weather.gov";
-  const REFRESH_AFTER = 30 * 60 * 1000;
   const HOURS = 48;
   const DAYS = 7;
-  const CACHE_KEY = "weather-cache";
   // Opening animation: wait for the pane to slide in, then draw the line.
   const INTRO_DELAY_MS = 180;
   const DRAW_MS = 700;
-  const POINT_KEY = "weather-point";
 
   const panel = $("weather");
   const nowEl = $("weather-now");
@@ -28,87 +26,9 @@ window.WeatherPanel = (() => {
   const weekEl = $("weather-week");
   const messageEl = $("weather-message");
 
-  // ---- Data ----------------------------------------------------------------------
-
-  async function getJson(url) {
-    for (let attempt = 0; ; attempt++) {
-      const res = await fetch(url, { headers: { Accept: "application/geo+json" } });
-      if (res.ok) return res.json();
-      // weather.gov has occasional hiccups; one retry usually fixes them.
-      if (res.status >= 500 && attempt === 0) continue;
-      throw new Error(`weather.gov answered ${res.status}`);
-    }
-  }
-
-  const readStore = (k) => {
-    try {
-      return JSON.parse(localStorage.getItem(k));
-    } catch {
-      return null;
-    }
-  };
-  const writeStore = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-
-  // weather.gov's forecast addresses for a ZIP code (these rarely change).
-  async function pointFor(zip) {
-    const saved = readStore(POINT_KEY);
-    if (saved?.zip === zip) return saved;
-    const loc = await invoke("zip_location", { zip });
-    if (!loc) throw new Error(`ZIP code ${zip} wasn't found.`);
-    const lat = loc.lat.toFixed(4);
-    const lon = loc.lon.toFixed(4);
-    const p = (await getJson(`${API}/points/${lat},${lon}`)).properties;
-    const where = p.relativeLocation?.properties ?? {};
-    const point = {
-      zip,
-      lat: loc.lat,
-      lon: loc.lon,
-      forecast: p.forecast,
-      hourly: p.forecastHourly,
-      place: [where.city, where.state].filter(Boolean).join(", "),
-    };
-    writeStore(POINT_KEY, point);
-    return point;
-  }
-
-  async function download(zip) {
-    const point = await pointFor(zip);
-    const [daily, hourly, alerts] = await Promise.all([
-      getJson(point.forecast),
-      getJson(point.hourly),
-      // Alerts are a bonus; don't fail the whole forecast over them.
-      getJson(`${API}/alerts/active?point=${point.lat.toFixed(4)},${point.lon.toFixed(4)}`).catch(() => null),
-    ]);
-    return {
-      zip,
-      at: Date.now(),
-      point,
-      daily: daily.properties.periods,
-      hourly: hourly.properties.periods,
-      alerts: (alerts?.features ?? []).map((f) => ({
-        event: f.properties.event,
-        headline: f.properties.headline,
-        ends: f.properties.ends ?? f.properties.expires,
-      })),
-    };
-  }
-
   // ---- Icons ---------------------------------------------------------------------
 
-  // Pick one of the icons in the icons folder from weather.gov's description,
-  // e.g. "Chance Rain Showers then Mostly Cloudy" -> rainy.
-  function iconFor(text, isDay) {
-    const t = (text ?? "").toLowerCase().split(" then ")[0];
-    const time = isDay ? "day" : "night";
-    let name;
-    if (/thunder|t-storm/.test(t)) name = "thunderstorm";
-    else if (/snow|sleet|flurr|blizzard|ice|freezing|wintry/.test(t)) name = "snowy";
-    else if (/rain|shower|drizzle/.test(t)) name = "rainy";
-    else if (/fog|haze|smoke|dust|mist|ash/.test(t)) name = "smoggy";
-    else if (/cloud|overcast|partly/.test(t)) name = `cloudy-${time}`;
-    else name = `clear-${time}`;
-    return `url("icons/${name}.png")`;
-  }
+  const iconFor = window.WeatherData.iconUrl;
 
   function weatherIcon(text, isDay, extraClass = "") {
     const span = document.createElement("span");
@@ -409,8 +329,15 @@ window.WeatherPanel = (() => {
 
   // ---- Refresh -------------------------------------------------------------------
 
-  let cache = readStore(CACHE_KEY);
+  let cache = window.WeatherData.cached();
   let inFlight = null;
+
+  // The desktop widget downloaded a newer forecast: show it.
+  window.WeatherData.onUpdate((data) => {
+    cache = data;
+    const { zip, panels } = window.PaneSettings.get();
+    if (panels.weather && data.zip === zip) render(data);
+  });
 
   function openForecastPage() {
     const p = cache?.point;
@@ -427,13 +354,12 @@ window.WeatherPanel = (() => {
       });
       return;
     }
-    const mine = cache?.zip === zip ? cache : null;
+    const mine = window.WeatherData.cached(zip);
     if (mine) render(mine); // show what we have straight away
-    if (mine && !force && Date.now() - mine.at < REFRESH_AFTER) return;
+    if (!force && !window.WeatherData.isStale(mine)) return;
 
     try {
-      cache = await download(zip);
-      writeStore(CACHE_KEY, cache);
+      cache = await window.WeatherData.download(zip);
       render(cache);
     } catch (err) {
       console.error("Weather update failed", err);

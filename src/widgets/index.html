@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Pane desktop</title>
+    <link rel="stylesheet" href="desktop.css" />
+    <link rel="stylesheet" href="weather/weather.css" />
+  </head>
+  <body>
+    <!-- The desktop: the wallpaper, with widgets on top (see desktop.js). -->
+    <canvas id="wallpaper" class="wallpaper" aria-hidden="true"></canvas>
+    <div id="widgets" class="widgets"></div>
+
+    <script src="desktop.js"></script>
+    <!-- Shared with the pane. -->
+    <script src="../shared/weather-data.js"></script>
+    <!-- Widgets: each registers itself with Desktop.register. -->
+    <script src="weather/weather.js"></script>
+  </body>
+</html>

@@ -181,6 +181,16 @@
         <h2 id="settings-title" class="settings-title">Pane settings</h2>
 
         <section class="settings-section">
+          <h3 class="group-label">Wallpaper</h3>
+          <div class="wallpaper-preview" id="wallpaper-preview" aria-hidden="true"></div>
+          <div class="field">
+            <span class="field-label field-dim" id="wallpaper-name">No wallpaper</span>
+            <button class="button glass" id="wallpaper-choose" type="button">Choose…</button>
+          </div>
+          <p class="field-error" id="wallpaper-error" hidden></p>
+        </section>
+
+        <section class="settings-section">
           <h3 class="group-label">Weather</h3>
           <label class="field">
             <span class="field-label">ZIP code</span>
@@ -195,6 +205,20 @@
           <label class="switch"><span>Weather</span><input type="checkbox" role="switch" data-panel="weather" /></label>
           <label class="switch"><span>Calendar</span><input type="checkbox" role="switch" data-panel="calendar" /></label>
           <label class="switch"><span>Music</span><input type="checkbox" role="switch" data-panel="music" /></label>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="group-label">Desktop widgets</h3>
+          <label class="switch"><span>Weather</span><input type="checkbox" role="switch" data-widget="weather" /></label>
+        </section>
+
+        <section class="settings-section">
+          <h3 class="group-label">Windows shell</h3>
+          <div class="field">
+            <span class="field-label field-dim" id="shell-status">Not running</span>
+            <button class="button glass" id="shell-toggle" type="button">Start</button>
+          </div>
+          <p class="field-note">Needed for Windows Settings and Store apps like Calculator and Photos. Stop it again when you're done.</p>
         </section>
 
         <div class="settings-actions">
@@ -231,6 +255,7 @@
     <script src="apps-panel.js"></script>
     <script src="pc-panel.js"></script>
     <script src="holidays.js"></script>
+    <script src="shared/weather-data.js"></script>
     <script src="weather.js"></script>
     <script src="calendar.js"></script>
     <script src="clock.js"></script>

@@ -47,7 +47,7 @@ listen("pane-closing", () => {
 document.addEventListener("keydown", (e) => {
   // Escape closes the pane, unless it's closing a dialog.
   if (e.key === "Escape" && !document.querySelector("dialog[open]")) invoke("hide_pane");
-  // Fully quit The Pane (and restore the taskbar).
+  // Fully quit The Pane.
   if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "q") invoke("quit_app");
 });
 

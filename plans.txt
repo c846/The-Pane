@@ -1,0 +1,20 @@
+Widgets
+- Desktop
+    - Desktop is a grid of 1x1 pannels
+        - a single 1x1 pannel should be the size of an app in the apps pane panel for consistency
+- Settings menu
+    - There will be many widgets, so have the settings menu have a widget button.
+        - When button is pressed turns settings menu into widget selection menu
+        - Selecting one places it on desktop in default from
+    - Next to widget button put a switch that can be turned on or off to lock widget rearranging/moving
+- Widget sizes
+    - Widgets must fit in the dimensions of pannel sizes
+        - For instance, a widget should be 3x2, 6x1, 3x4, etc.
+    - Widgets can have multiple sizes or variants, although do not have to
+        - Widgets have a default size
+        - Widget size (from the available widget sizes for that widget) can be selected by dragging the bottom-right corner of the widget
+- Dragging/arranging Widgets
+    - 1x1 pannels grid
+    - Each 1x1 pannel should be represented by a small little white/black squares (depending on The Panes theme)
+        - Square(s) grows when widget hovers over it
+    

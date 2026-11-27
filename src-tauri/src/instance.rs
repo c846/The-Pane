@@ -1,10 +1,10 @@
 //! Only one copy of The Pane runs at a time (two would fight over the
-//! keyboard hook, the Home hotkey and the taskbar).
+//! keyboard hook and the Home hotkey).
 //!
-//! A newly started copy takes over: it asks the running one to quit (which
-//! gives the user their taskbar back first) and waits for it to go. Started
-//! with `--quit`, it does only that and exits; the installer and uninstaller
-//! use this so the app is never killed outright while it hides the taskbar.
+//! A newly started copy takes over: it asks the running one to quit and
+//! waits for it to go. Started with `--quit`, it does only that and exits;
+//! the installer and uninstaller use this to stop the running copy before
+//! replacing or removing its files.
 
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -65,10 +65,9 @@ pub fn quit_when_asked(app: AppHandle) {
     };
     std::thread::spawn(move || unsafe {
         WaitForSingleObject(quit as HANDLE, INFINITE);
-        crate::restore_windows();
         app.exit(0);
         // If the event loop doesn't wind down promptly, don't keep the new
-        // copy waiting; everything that matters is already restored.
+        // copy waiting.
         std::thread::sleep(Duration::from_secs(2));
         std::process::exit(0);
     });

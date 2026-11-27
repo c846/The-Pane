@@ -1,0 +1,88 @@
+/* The desktop window: wallpaper, and the shared look of every widget. */
+
+/* Theme follows the wallpaper (desktop.js sets data-wallpaper on <html>).
+   Dark wallpaper: white text. */
+:root,
+:root[data-wallpaper="dark"] {
+  --text: rgba(255, 255, 255, 0.92);
+  --text-dim: rgba(255, 255, 255, 0.6);
+  --text-faint: rgba(255, 255, 255, 0.4);
+  --hover: rgba(255, 255, 255, 0.06);
+  --edge: rgba(255, 255, 255, 0.12);
+  --focus: rgba(255, 255, 255, 0.7);
+  --widget-bg: rgba(255, 255, 255, 0.07);
+  --widget-border: rgba(255, 255, 255, 0.1);
+  --widget-glass: blur(18px) saturate(140%) brightness(1.04);
+}
+
+/* Light wallpaper: black text. */
+:root[data-wallpaper="light"] {
+  --text: rgba(0, 0, 0, 0.9);
+  --text-dim: rgba(0, 0, 0, 0.62);
+  --text-faint: rgba(0, 0, 0, 0.45);
+  --hover: rgba(0, 0, 0, 0.05);
+  --edge: rgba(0, 0, 0, 0.12);
+  --focus: rgba(0, 0, 0, 0.7);
+  --widget-bg: rgba(255, 255, 255, 0.25);
+  --widget-border: rgba(0, 0, 0, 0.08);
+  --widget-glass: blur(18px) saturate(140%) brightness(0.97);
+}
+
+:root {
+  --radius: 1px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+  color: var(--text);
+  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-size: 13px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Drawn at the screen's own size by desktop.js. */
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.widgets {
+  position: fixed;
+  inset: 0;
+}
+
+/* One widget: a glass card, placed by desktop.js and dragged to move. */
+.widget {
+  position: absolute;
+  border: 1px solid var(--widget-border);
+  border-radius: var(--radius);
+  background: var(--widget-bg);
+  backdrop-filter: var(--widget-glass);
+  cursor: default;
+}
+
+.widget.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
