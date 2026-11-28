@@ -2,12 +2,11 @@
 //
 //   2x1, 3x1    now: temperature, conditions, place, today's high and low
 //   3x2         …plus any alert, and the next six hours
-//   5 wide      now (with an alert badge), and the next 48 hours, hour by
-//               hour (scrolls sideways)
-//   5x3 and up  …plus the week as small squares joined by a line, placed by
-//               temperature; hover over the graph for the nearest day's
-//               details. Each time it comes into view the line draws itself
-//               in, then the squares pop up.
+//   5x2         now (with an alert badge), and the week as small squares
+//               joined by a line, placed by temperature; hover over the
+//               graph for the nearest day's details
+//   5x3 and up  now, the next 48 hours, hour by hour (scrolls sideways),
+//               and the week
 //
 // The ZIP code comes from Pane settings. The forecast comes from
 // WeatherData (shared/weather-data.js), which caches it for every weather
@@ -36,21 +35,20 @@ Widgets.define({
     const FEW_HOURS = 6;
     const DAYS = 7;
     const CHECK_EVERY = 5 * 60 * 1000;
-    // Intro animation: wait for the pane to slide in, then draw the line.
-    const INTRO_DELAY_MS = 180;
-    const DRAW_MS = 700;
 
     let zip = ctx.settings()?.zip ?? "";
     let data = null;
     let note = null; // why an old forecast is showing
+    let shownData = null; // the forecast and key the last render showed,
+    let shownKey = ""; //    so identical renders can be skipped
 
     // ---- Layout by size ----------------------------------------------------------
 
     const layout = () => {
       const { w, h } = ctx.size;
-      if (w >= 5) return { hours: "strip", week: h >= 3 };
-      if (h >= 2) return { hours: "few", week: false };
-      return { hours: null, week: false };
+      if (w >= 5) return { hours: h >= 3 ? "strip" : null, badge: true, week: true };
+      if (h >= 2) return { hours: "few", badge: false, week: false };
+      return { hours: null, badge: false, week: false };
     };
 
     // ---- Pieces --------------------------------------------------------------------
@@ -87,8 +85,15 @@ Widgets.define({
       return days;
     }
 
-    function nowRow(days, withBadge) {
-      const now = data.hourly.find((h) => new Date(h.endTime) > Date.now()) ?? data.hourly[0];
+    // The hours that haven't ended yet, the current one first.
+    function upcomingHours() {
+      const now = Date.now();
+      const i = data.hourly.findIndex((h) => Date.parse(h.endTime) > now);
+      return i === -1 ? [] : data.hourly.slice(i);
+    }
+
+    function nowRow(days, upcoming, withBadge) {
+      const now = upcoming[0] ?? data.hourly[0];
       const row = el("div", "wx-now");
       if (!now) return row;
       const today = days[0];
@@ -139,9 +144,8 @@ Widgets.define({
     }
 
     // The next few hours, evenly across the bottom.
-    function fewHours() {
+    function fewHours(upcoming) {
       const row = el("div", "wx-few");
-      const upcoming = data.hourly.filter((h) => new Date(h.endTime) > Date.now());
       for (const h of upcoming.slice(1, FEW_HOURS + 1)) {
         const start = new Date(h.startTime);
         const cell = el("div", "wx-few-hour");
@@ -157,9 +161,9 @@ Widgets.define({
     }
 
     // The next 48 hours, scrolling sideways.
-    function hourStrip() {
+    function hourStrip(upcoming) {
       const strip = el("div", "wx-hours");
-      const hours = data.hourly.filter((h) => new Date(h.endTime) > Date.now()).slice(0, HOURS);
+      const hours = upcoming.slice(0, HOURS);
       hours.forEach((h, i) => {
         const start = new Date(h.startTime);
 
@@ -182,11 +186,24 @@ Widgets.define({
         strip.append(cell);
       });
 
-      // Fade whichever edge has more hours beyond it.
+      // Fade whichever edge has more hours beyond it: checked at most once a
+      // frame while scrolling, and the mask only changed when a fade turns on
+      // or off.
+      let fadeL = null;
+      let fadeR = null;
+      let pending = false;
       const fades = () => {
+        pending = false;
         const hidden = strip.scrollWidth - strip.clientWidth;
-        strip.style.setProperty("--fade-left", strip.scrollLeft > 2 ? "40px" : "0px");
-        strip.style.setProperty("--fade-right", strip.scrollLeft < hidden - 2 ? "40px" : "0px");
+        const l = strip.scrollLeft > 2;
+        const r = strip.scrollLeft < hidden - 2;
+        if (l !== fadeL) strip.style.setProperty("--fade-left", (fadeL = l) ? "40px" : "0px");
+        if (r !== fadeR) strip.style.setProperty("--fade-right", (fadeR = r) ? "40px" : "0px");
+      };
+      const fadesSoon = () => {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(fades);
       };
       // The mouse wheel scrolls it sideways.
       strip.addEventListener(
@@ -198,8 +215,8 @@ Widgets.define({
         },
         { passive: false },
       );
-      strip.addEventListener("scroll", fades, { passive: true });
-      requestAnimationFrame(fades);
+      strip.addEventListener("scroll", fadesSoon, { passive: true });
+      fadesSoon();
       return strip;
     }
 
@@ -284,12 +301,17 @@ Widgets.define({
       }
 
       // Anywhere over the graph picks the nearest day, so the info follows
-      // the mouse from day to day.
+      // the mouse from day to day. Where the plot is gets measured once each
+      // time the mouse comes in, not on every move.
+      let rect = null;
+      wrap.addEventListener("mouseenter", () => {
+        rect = null;
+      });
       wrap.addEventListener("mousemove", (e) => {
         if (body.closest(".dragging")) return;
-        const r = plot.getBoundingClientRect();
-        if (!r.width) return;
-        select(Math.max(0, Math.min(n - 1, Math.floor(((e.clientX - r.left) / r.width) * n))));
+        rect ??= plot.getBoundingClientRect();
+        if (!rect.width) return;
+        select(Math.max(0, Math.min(n - 1, Math.floor(((e.clientX - rect.left) / rect.width) * n))));
       });
       wrap.addEventListener("mouseleave", unselect);
 
@@ -335,28 +357,6 @@ Widgets.define({
       return week;
     }
 
-    // Draw the week's line in from left to right, popping each day's square
-    // up as the line reaches it.
-    function intro() {
-      const line = body.querySelector(".wx-week-line");
-      if (!line) return;
-      line.animate([{ clipPath: "inset(-10px 100% -10px 0)" }, { clipPath: "inset(-10px 0 -10px 0)" }], {
-        duration: DRAW_MS,
-        delay: INTRO_DELAY_MS,
-        easing: "cubic-bezier(0.45, 0, 0.25, 1)",
-        fill: "backwards",
-      });
-      for (const point of body.querySelectorAll(".wx-week-point")) {
-        const at = parseFloat(point.style.left) / 100; // how far along the line
-        const delay = INTRO_DELAY_MS + at * DRAW_MS;
-        point.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay, fill: "backwards" });
-        point.querySelector(".wx-week-square").animate(
-          [{ scale: "0" }, { scale: "1.5", offset: 0.6 }, { scale: "1" }],
-          { duration: 320, delay, easing: "ease-out", fill: "backwards" },
-        );
-      }
-    }
-
     // ---- Rendering -----------------------------------------------------------------
 
     function message(text, withSettings = false) {
@@ -369,19 +369,28 @@ Widgets.define({
         box.append(b);
       }
       body.replaceChildren(box);
+      shownData = null;
     }
 
+    // Rebuilt only when something it shows would change: a new forecast,
+    // another size, an old-forecast note, or the hour moving on.
     function render() {
       if (!data) return;
+      const upcoming = upcomingHours();
+      const key = [ctx.size.w, ctx.size.h, note, upcoming[0]?.startTime].join("|");
+      if (data === shownData && key === shownKey) return;
+      shownData = data;
+      shownKey = key;
+
       Tip.hide();
       const shape = layout();
       const days = toDays(data.daily);
-      const parts = [nowRow(days, shape.hours === "strip")];
+      const parts = [nowRow(days, upcoming, shape.badge)];
       if (shape.hours === "few") {
         if (data.alerts.length) parts.push(alertBadge());
-        parts.push(fewHours());
+        parts.push(fewHours(upcoming));
       }
-      if (shape.hours === "strip") parts.push(hourStrip());
+      if (shape.hours === "strip") parts.push(hourStrip(upcoming));
       if (shape.week) parts.push(weekGraph(days));
       body.replaceChildren(...parts);
       body.classList.toggle("stale", !!note);
@@ -427,7 +436,6 @@ Widgets.define({
 
     return {
       resized: render,
-      shown: intro,
       settingsChanged(s) {
         if (s.zip === zip) return;
         zip = s.zip;

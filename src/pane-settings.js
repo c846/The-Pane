@@ -220,10 +220,7 @@ window.PaneSettings = (() => {
       const description = document.createElement("span");
       description.className = "widget-option-description";
       description.textContent = def.description ?? "";
-      const sizes = document.createElement("span");
-      sizes.className = "widget-option-sizes";
-      sizes.textContent = def.sizes.map(([sw, sh]) => `${sw}×${sh}`).join(" · ");
-      text.append(name, description, sizes);
+      text.append(name, description);
       const status = document.createElement("span");
       status.className = "widget-option-status";
       button.append(sizePicture(def.sizes[0]), text, status);

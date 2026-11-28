@@ -4,6 +4,9 @@
 // The desktop never takes the keyboard, so there, clicking into the note
 // lets it take the keyboard (`desktop_keyboard`) until the note loses focus
 // (e.g. another app is clicked), then gives it back up.
+//
+// While the layout is unlocked the note can't be typed in, so the widget can
+// be dragged by any part of it (the box lets presses through, notes.css).
 Widgets.define({
   kind: "notes",
   name: "Notes",
@@ -27,6 +30,12 @@ Widgets.define({
     box.spellcheck = true;
     box.setAttribute("aria-label", "Note");
     body.append(box);
+
+    function setLocked(locked) {
+      box.readOnly = !locked;
+      if (!locked && document.activeElement === box) box.blur();
+    }
+    setLocked(ctx.locked);
 
     let saved = "";
     let timer = 0;
@@ -77,7 +86,7 @@ Widgets.define({
 
     if (!ctx.canType) {
       box.addEventListener("pointerdown", () => {
-        if (hasKeyboard) return;
+        if (hasKeyboard || box.readOnly) return;
         hasKeyboard = true;
         invoke("desktop_keyboard", { on: true })
           .then(() => box.focus())
@@ -88,6 +97,7 @@ Widgets.define({
     }
 
     return {
+      lockChanged: setLocked,
       destroy() {
         save();
         if (hasKeyboard) invoke("desktop_keyboard", { on: false }).catch(() => {});

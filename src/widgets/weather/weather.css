@@ -150,7 +150,7 @@
   white-space: nowrap;
 }
 
-/* ---- The next 48 hours (5 wide and up) ------------------------------------ */
+/* ---- The next 48 hours (5x3 and up) --------------------------------------- */
 
 .wx-hours {
   flex: none;
@@ -219,7 +219,7 @@
   white-space: nowrap;
 }
 
-/* ---- This week (5x3 and up) ------------------------------------------------ */
+/* ---- This week (5 wide and up) --------------------------------------------- */
 
 /* Left padding is the gutter for the temperature labels. */
 .wx-week {

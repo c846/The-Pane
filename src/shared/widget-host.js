@@ -35,6 +35,7 @@
 //         resized(size),                //   {w, h}: picked another size
 //         shown(), hidden(),            //   the surface came into / went out of view
 //         settingsChanged(settings),    //   Pane settings changed
+//         lockChanged(locked),          //   the layout was locked / unlocked
 //         destroy(),                    //   removed: stop anything still running
 //       };
 //     },
@@ -47,6 +48,8 @@
 //                        while it's open; the desktop always is)
 //   ctx.canType          false on the desktop, which never takes the keyboard
 //   ctx.size             {w, h} in cells
+//   ctx.locked           whether this surface's layout is locked (while it
+//                        isn't, widgets can be dragged by any part)
 //   ctx.settings()       the Pane settings (e.g. .zip)
 //   ctx.openSettings     opens Pane settings, or null where it can't (desktop)
 //   ctx.listen(ev, fn)   a backend event, unlistened when the widget goes
@@ -312,6 +315,9 @@ window.Widgets = (() => {
         get visible() {
           return visible;
         },
+        get locked() {
+          return locked();
+        },
         settings: () => settings,
         listen(event, fn) {
           const off = listen(event, fn);
@@ -398,7 +404,9 @@ window.Widgets = (() => {
     // Show the layout: mount what's new, drop what's gone, place the rest.
     function render() {
       if (!layout || !settings || !loaded) return;
-      layer.classList.toggle("locked", locked());
+      const isLocked = locked();
+      const lockChanged = layer.classList.contains("locked") !== isLocked;
+      layer.classList.toggle("locked", isLocked);
       const wanted = layout.widgets.filter((p) => p.surface === surface && defs.has(p.kind));
       layer.classList.toggle("empty", wanted.length === 0);
       const ids = new Set(wanted.map((p) => p.id));
@@ -434,6 +442,7 @@ window.Widgets = (() => {
         }
         show(w);
       }
+      if (lockChanged) for (const w of live.values()) call(w, "lockChanged", isLocked);
     }
 
     // Where a pointer is, in the layer's coordinates.

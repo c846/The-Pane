@@ -19,10 +19,16 @@
   font-family: system-ui, "Segoe UI Variable Text", "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 1.45;
-  scrollbar-width: thin;
   cursor: text;
 }
 
 .notes-text::placeholder {
   color: var(--text-faint);
+}
+
+/* Unlocked layout: not typed in, and presses go through to the widget so it
+   can be dragged by any part of it. */
+.widget-layer:not(.locked) .notes-text {
+  pointer-events: none;
+  cursor: inherit;
 }
