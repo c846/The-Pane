@@ -27,7 +27,8 @@
 }
 
 .sheet[data-glance="volume"] .glance-volume,
-.sheet[data-glance="switcher"] .glance-switcher {
+.sheet[data-glance="switcher"] .glance-switcher,
+.sheet[data-glance="overview"] .glance-overview {
   opacity: 1;
   visibility: visible;
   transition: opacity var(--fade);
@@ -55,7 +56,7 @@
   color: var(--text);
 }
 
-/* Same colours as the PC panel's volume slider, stood upright. */
+/* Same colours as the volume widget's slider, stood upright. */
 .volume-pop-track {
   position: relative;
   width: 4px;
@@ -184,4 +185,56 @@
 .switcher-title {
   font-size: 12px;
   color: var(--text-dim);
+}
+
+/* ---- Overview: every window in a grid, across the whole screen --------------- */
+
+/* Takes clicks (the backend stops the window being click-through). */
+.glance-overview {
+  left: 0;
+  display: block;
+  padding: 48px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sheet[data-glance="overview"] .glance-overview {
+  pointer-events: auto;
+}
+
+/* Rows of windows, centred in the screen (a short last row too) when they
+   all fit; scrolls when they don't. */
+.overview-grid {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 24px;
+}
+
+.overview-grid .switcher-item {
+  flex: 0 0 min(360px, 100%);
+  cursor: pointer;
+}
+
+/* The window the switcher had highlighted starts out highlighted; the one
+   under the mouse is, as it moves. */
+.overview-grid .switcher-item:hover,
+.overview-grid:not(:hover) .switcher-item.selected {
+  --glass-tint: var(--tile-bg-hover);
+  z-index: 1;
+  scale: 1.03;
+  border-color: var(--edge-strong);
+  box-shadow: var(--lift-shadow);
+}
+
+.overview-grid:hover .switcher-item.selected:not(:hover) {
+  --glass-tint: var(--tile-bg);
+  scale: 1;
+  border-color: var(--tile-border);
+  box-shadow: none;
 }

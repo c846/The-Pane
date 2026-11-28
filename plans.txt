@@ -1,0 +1,9 @@
+First time installing and opening:
+Set the default wallpaper as solid white
+A welcome pane opens up i the middle of the screen. This only shows once right after install and never again after closing. Text Content:
+TITLE: "Welcome to the Pane [Win_User]!"
+Description: "Moving your mouse to the left edge of the screen, or pressing "home" can open and close the Pane."
+Description 2: "Feel free to take some time and explore the Pane's features and different widgets! To make yourself at home, you can set a wallpaper by opening the Pane and going to settings."
+Close button
+
+The desktop and pane are both completely empty of widgets on a fresh install

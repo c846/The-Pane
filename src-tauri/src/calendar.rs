@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Event {
@@ -60,7 +61,7 @@ pub fn get_events() -> Vec<Event> {
 }
 
 #[tauri::command]
-pub fn add_event(date: String, title: String, yearly: bool) -> Result<Event, String> {
+pub fn add_event(app: AppHandle, date: String, title: String, yearly: bool) -> Result<Event, String> {
     let title = title.trim();
     if !valid_date(&date) {
         return Err("Invalid date".into());
@@ -74,13 +75,16 @@ pub fn add_event(date: String, title: String, yearly: bool) -> Result<Event, Str
     let event = Event { id: format!("{nanos:x}"), date, title: title.to_string(), yearly };
     events.push(event.clone());
     save(&events)?;
+    let _ = app.emit("events-changed", ());
     Ok(event)
 }
 
 #[tauri::command]
-pub fn remove_event(id: String) -> Result<(), String> {
+pub fn remove_event(app: AppHandle, id: String) -> Result<(), String> {
     let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let mut events = load();
     events.retain(|e| e.id != id);
-    save(&events)
+    save(&events)?;
+    let _ = app.emit("events-changed", ());
+    Ok(())
 }

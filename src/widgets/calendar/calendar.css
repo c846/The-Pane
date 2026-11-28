@@ -1,76 +1,9 @@
-/* Calendar: right side of the top-right quadrant. */
+/* Calendar: the month's title between ‹ ›, weekday names, then six weeks
+   sharing the rest of the height. */
 
-.calendar {
-  flex: none;
-  width: 300px;
-  display: flex;
-  flex-direction: column;
+.widget-calendar .widget-body {
   gap: 6px;
-}
-
-/* ---- Day, time and battery: one line above the calendar ------------------ */
-
-.clock {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  padding: 0 8px 4px;
-  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
-  font-size: 26px;
-  font-weight: 300;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.clock-day {
-  color: var(--text-dim);
-}
-
-/* Battery sits at the right end of the line. */
-.battery {
-  margin-left: auto;
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  color: var(--text-dim);
-}
-
-.battery[hidden],
-.battery [hidden] {
-  display: none;
-}
-
-/* Sized to the text, and centred on the digits (which stand about 0.7em
-   tall on the baseline): sitting on the baseline, then nudged down by
-   half its size less half the digits' height. */
-.icon-battery-saver {
-  --icon-size: 0.85em;
-  align-self: baseline;
-  position: relative;
-  top: calc(0.85em / 2 - 0.35em);
-}
-
-.battery.charging .battery-text::after {
-  content: " charging";
-  font-size: 11px;
-  font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
-}
-
-/* Low and not plugged in. */
-.battery.low {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.calendar[hidden] {
-  display: none;
-}
-
-/* With weather turned off, the calendar takes the whole quadrant. */
-.weather[hidden] + .calendar {
-  flex: 1;
-  width: auto;
+  padding: 12px 14px 14px;
 }
 
 .cal-header {
@@ -88,16 +21,22 @@
   background: transparent;
   color: var(--text);
   font: inherit;
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 .cal-title {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 14px;
   font-weight: 600;
   text-align: left;
 }
 
 .cal-arrow {
+  flex: none;
   width: 28px;
   display: inline-flex;
   align-items: center;
@@ -184,6 +123,7 @@
   gap: 3px;
   border-radius: var(--radius);
   outline: none;
+  transition: background-color 160ms ease;
 }
 
 .cal-day:hover {
@@ -207,7 +147,8 @@
   font-weight: 700;
 }
 
-/* Little squares under the date: holidays and your own events. */
+/* Little squares under the date: holidays and your own events, in the
+   text colour (white or black). */
 .cal-marks {
   display: flex;
   gap: 2px;
@@ -218,11 +159,6 @@
   width: 5px;
   height: 5px;
   border-radius: var(--radius-sm);
-}
-
-/* Holidays and your events, in the text colour (white or black). */
-.cal-mark.holiday,
-.cal-mark.event {
   background: var(--text);
 }
 
@@ -230,7 +166,7 @@
   opacity: 0.5;
 }
 
-/* "New event" dialog. */
+/* The "New event" dialog (pane only; it borrows the settings dialog's look). */
 .dialog-subtitle {
   margin: 4px 0 0;
   font-size: 12px;
@@ -241,6 +177,6 @@
   width: 100%;
 }
 
-.settings-actions {
+#event-dialog .settings-actions {
   gap: 8px;
 }

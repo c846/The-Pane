@@ -1,0 +1,40 @@
+/* Date: the time in large light type, the date beneath it. */
+
+.widget-date .widget-body {
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 16px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.date-time {
+  font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1.1;
+}
+
+.date-day {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.widget-date .widget-body[data-size="1x1"] {
+  align-items: center;
+  padding: 8px;
+}
+
+.widget-date .widget-body[data-size="1x1"] .date-time {
+  font-size: 26px;
+}
+
+.widget-date .widget-body[data-size="3x2"] .date-time {
+  font-size: 64px;
+}
+
+.widget-date .widget-body[data-size="3x2"] .date-day {
+  font-size: 16px;
+}

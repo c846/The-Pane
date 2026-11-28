@@ -8,7 +8,7 @@
 //   A one-off bump that returns to normal (press, pop, nudge). Keyframes
 //   use `transform`, which is added on top of the element's own.
 //
-// Panels and buttons (anything matching PRESSABLE) grow a little more when
+// Buttons (anything matching PRESSABLE) grow a little more when
 // pressed, then settle back.
 window.Motion = (() => {
   const SLIDE_MS = 180;
@@ -47,7 +47,7 @@ window.Motion = (() => {
 
   // ---- Pressing ------------------------------------------------------------------
 
-  const PRESSABLE = ".tile:not(.tile-empty), .button, .alert-badge, .media-source, .slider-icon:is(button)";
+  const PRESSABLE = ".tile:not(.tile-empty), .button, .top-button, .wx-alert, .media-source, .level-icon:is(button)";
 
   // Grow a little more than the hover size, then settle back. (Hover sizes
   // things with `scale`; pulses use `transform`, added on top.)

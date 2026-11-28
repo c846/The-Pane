@@ -24,6 +24,23 @@
         "resizable": false,
         "alwaysOnTop": true,
         "skipTaskbar": true
+      },
+      {
+        "label": "desktop",
+        "url": "widgets/index.html",
+        "title": "The Pane desktop",
+        "x": 0,
+        "y": 0,
+        "width": 800,
+        "height": 600,
+        "visible": false,
+        "focus": false,
+        "decorations": false,
+        "shadow": false,
+        "resizable": false,
+        "alwaysOnBottom": true,
+        "skipTaskbar": true,
+        "backgroundColor": "#ffffff"
       }
     ],
     "security": {

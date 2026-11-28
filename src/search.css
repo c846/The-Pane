@@ -1,11 +1,9 @@
-/* Search bar at the top of the pane, with its results list. */
+/* Search bar in the pane's top bar, with its results list. */
 
 .search {
   position: relative;
-  z-index: 10; /* results lie over the quadrants */
-  width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
+  flex: 1;
+  min-width: 0;
 }
 
 .search-box {

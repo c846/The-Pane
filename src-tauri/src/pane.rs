@@ -13,7 +13,8 @@
 //!            slides it back a little (and enough pushing closes it).
 //! - GLANCE:  partly open to show something brief without the full pane:
 //!            the volume popup or the Alt+Space window switcher. Unfocused
-//!            and click-through, like PEEK.
+//!            and click-through, like PEEK. (The switcher's overview slides
+//!            all the way across and takes clicks; see switcher.rs.)
 //! - CLOSING: sliding away (after closing, or when a peek or glance retracts).
 //!            Click-through; hidden once the slide is over, unless it is
 //!            opened or peeked again first.
@@ -28,7 +29,6 @@ use std::sync::atomic::{AtomicBool, AtomicIsize, AtomicU32, AtomicU64, AtomicU8,
 use std::thread;
 use std::time::Duration;
 
-use tauri::ipc::Response;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{apps, win};
@@ -51,6 +51,8 @@ const GLANCE: u8 = 4;
 pub enum Glance {
     Volume = 1,
     Switcher = 2,
+    /// Every open window in a grid, covering the screen (Alt + held Space).
+    Overview = 3,
 }
 
 static MODE: AtomicU8 = AtomicU8::new(HIDDEN);
@@ -64,6 +66,14 @@ static PANE_HWND: AtomicIsize = AtomicIsize::new(0);
 static PREVIOUS: AtomicIsize = AtomicIsize::new(0);
 /// Last slide amount sent to the page (f32 bits), to skip repeats.
 static LAST_SENT: AtomicU32 = AtomicU32::new(u32::MAX);
+
+/// While set, the pane stays open even though it isn't in front (e.g. while
+/// a file picker it opened is showing).
+static HELD_OPEN: AtomicBool = AtomicBool::new(false);
+
+pub fn hold_open(on: bool) {
+    HELD_OPEN.store(on, Ordering::SeqCst);
+}
 
 pub fn is_open() -> bool {
     MODE.load(Ordering::SeqCst) == OPEN
@@ -251,7 +261,7 @@ pub fn close(app: &AppHandle) {
     // Lets the page slide out and stop work it only does while open.
     let _ = app.emit_to("pane", "pane-closing", ());
     // Give focus back to the app the user was in, rather than letting
-    // Windows pick (with the taskbar hidden it can land on the shell).
+    // Windows pick (it can land on the bare desktop).
     let was_front = h == win::foreground();
     let prev = PREVIOUS.swap(0, Ordering::SeqCst);
     if was_front && prev != 0 {
@@ -273,7 +283,7 @@ pub fn close_if_not_foreground(app: &AppHandle) {
     let app = app.clone();
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(50));
-        if !is_open() || !REVEALED.load(Ordering::SeqCst) {
+        if !is_open() || !REVEALED.load(Ordering::SeqCst) || HELD_OPEN.load(Ordering::SeqCst) {
             return;
         }
         if win::foreground() != hwnd() {
@@ -293,30 +303,6 @@ pub fn toggle(app: &AppHandle) {
 #[tauri::command]
 pub fn hide_pane(app: AppHandle) {
     close(&app);
-}
-
-/// Identifies the current wallpaper (path + last-modified time), so the page
-/// only reloads the image when it actually changed. Empty if there is none.
-#[tauri::command]
-pub fn wallpaper_key() -> String {
-    let Some(path) = win::wallpaper_path() else {
-        return String::new();
-    };
-    let modified = std::fs::metadata(&path)
-        .and_then(|m| m.modified())
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map_or(0, |d| d.as_millis());
-    format!("{path}|{modified}")
-}
-
-/// The wallpaper image file's bytes. Empty if there is none.
-#[tauri::command]
-pub fn get_wallpaper() -> Response {
-    let data = win::wallpaper_path()
-        .and_then(|p| std::fs::read(p).ok())
-        .unwrap_or_default();
-    Response::new(data)
 }
 
 /// Called by the page once the background is drawn; the page slides the

@@ -1,15 +1,22 @@
 //! Keyboard handling, all on one thread:
 //!
-//! - The Home key toggles the pane (a normal RegisterHotKey hotkey; while The
-//!   Pane runs, Home is reserved for it in every app).
+//! - The Home key (a normal RegisterHotKey hotkey; while The Pane runs, Home
+//!   is reserved for it in every app): tapping it toggles the pane, holding
+//!   it (HOLD_MS) minimizes every app, showing the desktop (or, if they all
+//!   are already minimized, brings them back). Which one is only
+//!   known once it's let go or held long enough, so the pane toggles on
+//!   release.
 //! - A low-level keyboard hook that takes over keys from Windows:
 //!   - Volume keys set the volume here and show The Pane's own volume
 //!     popup, so Windows' volume flyout never appears.
 //!   - Alt+Space opens The Pane's window switcher (see switcher.rs): keep
 //!     holding Alt and press Space to move on (Shift+Space moves back), let
-//!     go of Alt to switch, Esc to cancel.
+//!     go of Alt to switch, Esc to cancel. Holding Space down (HOLD_MS)
+//!     opens the overview instead: every window in a grid, picked with the
+//!     mouse; Esc or Home closes it.
 //!   - Windows shortcuts are swallowed: the Windows key (and so every Win+…
-//!     shortcut), Alt+Tab, Alt+Esc, Ctrl+Esc and Ctrl+Shift+Esc.
+//!     shortcut), Alt+Tab, Alt+Esc and Ctrl+Esc. Ctrl+Shift+Esc (Task
+//!     Manager) is left alone: with no Windows shell, it's the way out.
 //!     Ctrl+Alt+Del can't be intercepted, so it always still works.
 //!
 //! The hook must answer quickly: if it ever keeps Windows waiting (about
@@ -19,7 +26,7 @@
 //! pane, is handed to a worker thread. As a safety net the hook is also
 //! re-installed every few seconds, since Windows never says it removed one.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{channel, Sender};
 use std::sync::OnceLock;
 use std::thread;
@@ -33,7 +40,7 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
     VK_SHIFT, VK_SPACE, VK_TAB, VK_VOLUME_DOWN, VK_VOLUME_MUTE, VK_VOLUME_UP,
 };
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, GetMessageW, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, HC_ACTION,
+    CallNextHookEx, GetMessageW, KillTimer, SetTimer, SetWindowsHookExW, UnhookWindowsHookEx, HC_ACTION,
     KBDLLHOOKSTRUCT, LLKHF_ALTDOWN, MSG, WH_KEYBOARD_LL, WM_HOTKEY, WM_KEYDOWN, WM_SYSKEYDOWN,
     WM_TIMER,
 };
@@ -51,14 +58,24 @@ const VK_MASK: u16 = 0xE8;
 pub const OUR_INPUT: usize = 0x5041_4E45;
 /// How often the hook is re-installed, in case Windows removed it.
 const REARM_EVERY_MS: u32 = 5_000;
+/// Holding Home at least this long minimizes every app instead; holding
+/// Space (with Alt) this long opens the window overview.
+const HOLD_MS: u128 = 450;
+/// How often a pressed Home key is checked until it's let go or held.
+const HOME_POLL_MS: u32 = 25;
 
 enum Action {
     TogglePane,
+    MinimizeAll,
     Volume(VolumeKey),
     SwitcherStart { back: bool },
     SwitcherStep { back: bool },
     SwitcherFinish,
     SwitcherCancel,
+    /// Alt+Space press number `press`: if Space is still down HOLD_MS
+    /// later, open the overview.
+    SpaceHeld { press: u64 },
+    OverviewClose,
 }
 
 static ACTIONS: OnceLock<Sender<Action>> = OnceLock::new();
@@ -66,6 +83,8 @@ static ACTIONS: OnceLock<Sender<Action>> = OnceLock::new();
 static SWITCHING: AtomicBool = AtomicBool::new(false);
 /// A Space press was swallowed; swallow its release too.
 static SPACE_DOWN: AtomicBool = AtomicBool::new(false);
+/// Counts Alt+Space presses, so a hold check knows if it's still the same press.
+static SPACE_PRESSES: AtomicU64 = AtomicU64::new(0);
 
 pub fn install(app: AppHandle) {
     let (tx, rx) = channel::<Action>();
@@ -77,16 +96,33 @@ pub fn install(app: AppHandle) {
         for action in rx {
             let app = &worker_app;
             match action {
+                // Home closes the overview rather than opening the pane.
+                Action::TogglePane if switcher::OVERVIEW.load(Ordering::SeqCst) => switcher::close_overview(app),
                 Action::TogglePane => {
                     let started = std::time::Instant::now();
                     pane::toggle(app);
                     crate::debug_log::log(format!("toggle took {} ms", started.elapsed().as_millis()));
+                }
+                Action::MinimizeAll => {
+                    switcher::close_overview(app);
+                    switcher::minimize_or_restore_all(app);
                 }
                 Action::Volume(key) => system::volume_key(app, key),
                 Action::SwitcherStart { back } => switcher::start(app, back),
                 Action::SwitcherStep { back } => switcher::step(app, back),
                 Action::SwitcherFinish => switcher::finish(app),
                 Action::SwitcherCancel => switcher::cancel(app),
+                Action::SpaceHeld { press } => {
+                    let app = app.clone();
+                    thread::spawn(move || {
+                        thread::sleep(std::time::Duration::from_millis(HOLD_MS as u64));
+                        let same_press = SPACE_PRESSES.load(Ordering::SeqCst) == press;
+                        if same_press && SPACE_DOWN.load(Ordering::SeqCst) && SWITCHING.swap(false, Ordering::SeqCst) {
+                            switcher::overview(&app);
+                        }
+                    });
+                }
+                Action::OverviewClose => switcher::close_overview(app),
             }
         }
     });
@@ -105,15 +141,32 @@ pub fn install(app: AppHandle) {
         if hook.is_null() {
             eprintln!("The Pane: could not install the keyboard hook");
         }
-        SetTimer(std::ptr::null_mut(), 0, REARM_EVERY_MS, None);
+        let rearm_timer = SetTimer(std::ptr::null_mut(), 0, REARM_EVERY_MS, None);
+        // While Home is down: when it went down, and the timer watching it.
+        let mut home: Option<(std::time::Instant, usize)> = None;
 
         let mut msg: MSG = std::mem::zeroed();
         while GetMessageW(&mut msg, std::ptr::null_mut(), 0, 0) > 0 {
             match msg.message {
-                WM_HOTKEY if msg.wParam == HOTKEY_ID as usize => send(Action::TogglePane),
+                WM_HOTKEY if msg.wParam == HOTKEY_ID as usize => {
+                    if home.is_none() {
+                        let timer = SetTimer(std::ptr::null_mut(), 0, HOME_POLL_MS, None);
+                        home = Some((std::time::Instant::now(), timer));
+                    }
+                }
+                // Home let go (a tap), or held long enough.
+                WM_TIMER if home.is_some_and(|(_, t)| t == msg.wParam) => {
+                    let (since, timer) = home.unwrap();
+                    let held = since.elapsed().as_millis() >= HOLD_MS;
+                    if held || !key_down(VK_HOME) {
+                        KillTimer(std::ptr::null_mut(), timer);
+                        home = None;
+                        send(if held { Action::MinimizeAll } else { Action::TogglePane });
+                    }
+                }
                 // Install a fresh hook before removing the old one, so no
                 // key slips through in between.
-                WM_TIMER => {
+                WM_TIMER if msg.wParam == rearm_timer => {
                     let fresh = install_hook();
                     if !fresh.is_null() {
                         if !hook.is_null() {
@@ -212,14 +265,19 @@ fn swallow(vk: u16, msg: u32, flags: u32) -> bool {
                 SPACE_DOWN.store(false, Ordering::SeqCst);
                 return true;
             }
-            SPACE_DOWN.store(true, Ordering::SeqCst);
+            // Holding Space repeats the press; only the first one counts.
+            let repeat = SPACE_DOWN.swap(true, Ordering::SeqCst);
             if alt {
                 mask_alt();
-                let back = key_down(VK_SHIFT);
-                if SWITCHING.swap(true, Ordering::SeqCst) {
-                    send(Action::SwitcherStep { back });
-                } else {
-                    send(Action::SwitcherStart { back });
+                if !repeat && !switcher::OVERVIEW.load(Ordering::SeqCst) {
+                    let back = key_down(VK_SHIFT);
+                    if SWITCHING.swap(true, Ordering::SeqCst) {
+                        send(Action::SwitcherStep { back });
+                    } else {
+                        send(Action::SwitcherStart { back });
+                    }
+                    let press = SPACE_PRESSES.fetch_add(1, Ordering::SeqCst) + 1;
+                    send(Action::SpaceHeld { press });
                 }
             }
             true
@@ -229,6 +287,17 @@ fn swallow(vk: u16, msg: u32, flags: u32) -> bool {
         VK_TAB if alt => {
             if down {
                 mask_alt();
+            }
+            true
+        }
+
+        // Esc closes the overview (with or without Alt).
+        VK_ESCAPE if switcher::OVERVIEW.load(Ordering::SeqCst) => {
+            if down {
+                if alt {
+                    mask_alt();
+                }
+                send(Action::OverviewClose);
             }
             true
         }
@@ -248,8 +317,9 @@ fn swallow(vk: u16, msg: u32, flags: u32) -> bool {
                 }
                 true
             } else {
-                // Ctrl+Esc (Start) and Ctrl+Shift+Esc (Task Manager).
-                key_down(VK_CONTROL)
+                // Ctrl+Esc (Start), but never Ctrl+Shift+Esc: with no
+                // Windows shell, Task Manager is the way out.
+                key_down(VK_CONTROL) && !key_down(VK_SHIFT)
             }
         }
 

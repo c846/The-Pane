@@ -1,0 +1,199 @@
+/* Widgets and the grid they sit on (widget-host.js), the same on the pane
+   and the desktop. Each window sets how a widget's glass looks there:
+   --widget-tint, --widget-border and --widget-glass. */
+
+.widget-layer {
+  position: relative;
+}
+
+/* The grid: one small square per cell, centred in it, shown only while a
+   widget is being moved or resized. The squares a widget would land on grow
+   to fill their cells. */
+.widget-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.widget-layer.arranging > .widget-grid {
+  opacity: 1;
+}
+
+.widget-grid-cell {
+  position: absolute;
+  width: var(--cell);
+  height: var(--cell);
+  display: grid;
+  place-items: center;
+}
+
+.widget-grid-cell::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius);
+  background: var(--grid-dot);
+  transition:
+    width 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 140ms ease;
+}
+
+.widget-grid-cell.on::before {
+  width: 100%;
+  height: 100%;
+  background: var(--grid-fill);
+}
+
+/* Where a widget won't fit: the squares grow only part way. */
+.widget-grid.blocked .widget-grid-cell.on::before {
+  width: 40%;
+  height: 40%;
+  background: var(--grid-dot);
+}
+
+/* One widget: a glass card covering whole cells, placed by widget-host.js. */
+.widget-layer > .widget {
+  --glass-tint: var(--widget-tint);
+  --glass-filter: var(--widget-glass);
+  position: absolute;
+  border: 1px solid var(--widget-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  cursor: default;
+}
+
+/* Snapping into place after a drag, and between sizes. */
+.widget-layer > .widget.settling {
+  transition:
+    left 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.widget-layer > .widget.dragging {
+  z-index: 2;
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+/* The widget's own content fills the card. Widgets lay it out by size
+   (data-size, e.g. "3x2"). */
+.widget > .widget-body {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Remove (top-right) and resize (bottom-right): on hover, unless locked. */
+.widget > .widget-remove,
+.widget > .widget-resize {
+  position: absolute;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.widget:hover > .widget-remove,
+.widget:hover > .widget-resize,
+.widget.resizing > .widget-resize {
+  opacity: 1;
+}
+
+.widget-layer.locked .widget-remove,
+.widget-layer.locked .widget-resize,
+.widget-layer.arranging .widget-remove {
+  display: none;
+}
+
+/* An × in the top-right corner, the same size and inset as the resize
+   square in the bottom-right (8px, growing to 12px on hover). Like that,
+   the button itself is a larger, invisible target. */
+.widget > .widget-remove {
+  --x: 8px;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.widget > .widget-remove:hover {
+  --x: 12px;
+  color: var(--text);
+}
+
+.widget > .widget-remove:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+/* The ×: two crossed lines, drawn rather than typed so it's exactly square
+   (a font's × never quite is). Each spans the diagonal of a --x square whose
+   corner is 4px in from the widget's, like the resize square's. */
+.widget-remove::before,
+.widget-remove::after {
+  content: "";
+  position: absolute;
+  top: calc(4px + var(--x) / 2);
+  right: calc(4px + var(--x) / 2);
+  width: calc(var(--x) * 1.4142);
+  height: 1.5px;
+  background: currentColor;
+  translate: 50% -50%;
+  rotate: 45deg;
+  transition:
+    top 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    right 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 120ms ease;
+}
+
+.widget-remove::after {
+  rotate: -45deg;
+}
+
+/* A little square in the bottom-right corner; it grows a bit on hover and
+   while resizing. The element itself is a larger, invisible target, so it's
+   easy to grab. */
+.widget > .widget-resize {
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+}
+
+.widget-resize::before {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius);
+  background: var(--text-dim);
+  transition:
+    width 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 120ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 120ms ease;
+}
+
+.widget-resize:hover::before,
+.widget.resizing .widget-resize::before {
+  width: 12px;
+  height: 12px;
+  background: var(--text);
+}

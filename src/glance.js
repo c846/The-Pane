@@ -5,11 +5,16 @@
 //               Just a vertical bar with the level above it. The backend
 //               slides it away shortly after the last press.
 //               ("volume-changed" instead, when the pane is fully open:
-//               only the PC panel's slider moves.)
+//               only the volume widgets move; they listen for both.)
 // Switcher      "switcher-open" {windows, selected}: Alt+Space. A preview
 //               and the name of each open window, front to back.
 //               "switcher-select" i: Space pressed again, highlight window i.
 //               Letting go of Alt switches; the backend does that.
+// Overview      "overview-open" selected: Space was held down. The pane
+//               slides on across the whole screen, showing the same windows
+//               in a grid. Click one to switch to it (`overview_pick`), or
+//               the background to close it (`overview_close`); the backend
+//               closes it on Esc or Home.
 window.Glance = (() => {
   const { invoke } = window.__TAURI__.core;
   const { listen } = window.__TAURI__.event;
@@ -46,12 +51,9 @@ window.Glance = (() => {
   listen("volume-popup", ({ payload }) => {
     // Already showing: the bar moves. Appearing: it starts at the new level.
     showVolume(payload, sheet.dataset.glance === "volume");
-    window.PcPanel.showVolume(payload);
     window.Backdrop.refresh(); // in case the wallpaper (and so the theme) changed
     window.Slide.glance("volume");
   });
-
-  listen("volume-changed", ({ payload }) => window.PcPanel.showVolume(payload));
 
   // ---- Window switcher -----------------------------------------------------------
 
@@ -60,6 +62,7 @@ window.Glance = (() => {
   // fresh one is taken.
   const previews = new Map(); // window id -> canvas
   let items = [];
+  let shownWindows = []; // as last sent by "switcher-open" (the overview shows them too)
 
   // The backend sends width and height (u32 each), then RGBA pixels.
   function previewCanvas(buffer) {
@@ -137,6 +140,7 @@ window.Glance = (() => {
     for (const id of previews.keys()) {
       if (!windows.some((w) => w.id === id)) previews.delete(id); // closed since
     }
+    shownWindows = windows;
     items = windows.map(makeItem);
     list.replaceChildren(...items);
     select(selected, false);
@@ -145,6 +149,28 @@ window.Glance = (() => {
   });
 
   listen("switcher-select", ({ payload }) => select(payload, true));
+
+  // ---- Overview ----------------------------------------------------------------
+
+  const grid = $("overview-grid");
+  const overview = grid.closest(".glance-overview");
+
+  listen("overview-open", ({ payload: selected }) => {
+    const tiles = shownWindows.map((win, i) => {
+      const tile = makeItem(win);
+      tile.classList.toggle("selected", i === selected);
+      tile.addEventListener("click", () => invoke("overview_pick", { id: win.id }).catch(console.error));
+      return tile;
+    });
+    grid.replaceChildren(...tiles);
+    overview.scrollTop = 0;
+    window.Slide.glance("overview");
+  });
+
+  // Clicking anywhere but a window closes it.
+  overview.addEventListener("click", (e) => {
+    if (!e.target.closest(".switcher-item")) invoke("overview_close").catch(console.error);
+  });
 
   return {};
 })();

@@ -3,35 +3,13 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Settings {
     /// US ZIP code for the weather ("" = not set).
     pub zip: String,
-    pub panels: Panels,
-}
-
-/// Which panels are shown.
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Panels {
-    pub apps: bool,
-    pub weather: bool,
-    pub calendar: bool,
-    pub music: bool,
-}
-
-impl Default for Panels {
-    fn default() -> Self {
-        Self { apps: true, weather: true, calendar: true, music: true }
-    }
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self { zip: String::new(), panels: Panels::default() }
-    }
 }
 
 fn file() -> Option<PathBuf> {
@@ -51,8 +29,9 @@ pub fn get_settings() -> Settings {
     load()
 }
 
+/// Saves the settings and tells every window (the pane and the desktop).
 #[tauri::command]
-pub fn save_settings(settings: Settings) -> Result<(), String> {
+pub fn save_settings(app: AppHandle, settings: Settings) -> Result<(), String> {
     let zip = settings.zip.trim();
     if !zip.is_empty() && !(zip.len() == 5 && zip.bytes().all(|b| b.is_ascii_digit())) {
         return Err("ZIP code must be 5 digits".into());
@@ -67,5 +46,7 @@ pub fn save_settings(settings: Settings) -> Result<(), String> {
     // Write a temporary file and swap it in, so a crash can't leave half a file.
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
-    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    let _ = app.emit("settings-changed", &settings);
+    Ok(())
 }

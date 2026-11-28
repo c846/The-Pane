@@ -1,29 +1,19 @@
-/* Top-right quadrant: weather on the left, calendar on the right. */
+/* Weather. What shows at each size is decided in weather.js; this lays the
+   pieces out: now on top, then the hours, then the week filling the rest. */
 
-.q-glance {
-  flex-direction: row;
-  gap: 28px;
-}
-
-/* Weather and calendar together need more room than music below. */
-.column-right > .q-glance {
-  flex: 3;
-}
-
-.column-right > .q-media {
-  flex: 2;
-}
-
-.weather {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+.widget-weather .widget-body {
   gap: 14px;
+  padding: 16px;
 }
 
-.weather[hidden] {
-  display: none;
+/* One row tall: just now, centred. */
+.widget-weather .widget-body:is([data-size="2x1"], [data-size="3x1"]) {
+  justify-content: center;
+}
+
+/* Showing an old forecast because updating failed. */
+.widget-weather .widget-body.stale .wx-now {
+  opacity: 0.7;
 }
 
 .wx-icon {
@@ -32,46 +22,51 @@
 
 /* ---- Now ------------------------------------------------------------------ */
 
-.weather-now {
+.wx-now {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 12px;
   min-height: 48px;
 }
 
-.now-icon {
+.wx-now-icon {
   --icon-size: 36px;
 }
 
-.now-temp {
+.wx-temp {
   font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
   font-size: 36px;
   font-weight: 300;
   line-height: 1;
 }
 
-.now-text {
+.wx-now-text {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.now-summary {
+.wx-summary {
   font-size: 15px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.now-sub {
+.wx-sub {
   display: flex;
   gap: 12px;
   color: var(--text-dim);
   font-size: 12px;
+  white-space: nowrap;
 }
 
-.now-place {
+.wx-place {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 0;
   border: none;
   background: none;
@@ -79,21 +74,18 @@
   font: inherit;
 }
 
-.now-place:hover {
+.wx-place:hover {
   color: var(--text);
   text-decoration: underline;
 }
 
-.now-range {
-  white-space: nowrap;
-}
-
-/* Weather alert (e.g. "Coastal Flood Warning"); hover for details. */
-.alert-badge {
+/* Weather alert (e.g. "Coastal Flood Warning"); hover for details. Beside
+   now when there's room, under it otherwise. */
+.wx-alert {
   --glass-tint: var(--tile-bg);
   --glass-filter: var(--glass-control);
-  margin-left: auto;
-  max-width: 45%;
+  flex: none;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -107,24 +99,60 @@
   font-size: 12px;
 }
 
-.alert-badge:hover {
+.wx-now .wx-alert {
+  margin-left: auto;
+  max-width: 45%;
+}
+
+.wx-alert:hover {
   --glass-tint: var(--tile-bg-hover);
 }
 
-.alert-icon {
-  --icon: url("icons/danger.png");
+.wx-alert-icon {
   --icon-size: 14px;
 }
 
-.alert-text {
+.wx-alert-text {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* ---- Next 48 hours ------------------------------------------------------- */
+.wx-hour:focus-visible,
+.wx-place:focus-visible,
+.wx-alert:focus-visible,
+.wx-week-point:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
 
-.weather-hours {
+/* ---- The next few hours (3x2) ---------------------------------------------- */
+
+.wx-few {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  padding-top: 10px;
+  border-top: 1px solid var(--edge);
+}
+
+.wx-few-hour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.wx-hour-time {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ---- The next 48 hours (5 wide and up) ------------------------------------ */
+
+.wx-hours {
   flex: none;
   display: flex;
   overflow-x: auto;
@@ -136,11 +164,16 @@
   mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
 }
 
-.weather-hours::-webkit-scrollbar {
+/* With no week below, the hours sit at the bottom. */
+.wx-hours:last-child {
+  margin-top: auto;
+}
+
+.wx-hours::-webkit-scrollbar {
   display: none;
 }
 
-.hour {
+.wx-hour {
   flex: none;
   width: 52px;
   display: flex;
@@ -149,42 +182,26 @@
   gap: 5px;
   padding: 8px 0;
   border-radius: var(--radius);
+  outline: none;
+  transition: background-color 160ms ease;
 }
 
-.hour:hover {
+.wx-hour:hover {
   background: var(--hover);
 }
 
-.hour:focus-visible,
-.now-place:focus-visible,
-.alert-badge:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
-}
-
-.hour-time {
-  font-size: 11px;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-
-.strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.hour-temp {
+.wx-hour-temp {
   font-size: 13px;
 }
 
-.hour-rain {
+.wx-hour-rain {
   min-height: 14px;
   font-size: 11px;
   color: var(--text-faint);
 }
 
 /* Between days: a thin line with the new day's name running down beside it. */
-.hour-divider {
+.wx-hour-divider {
   flex: none;
   display: flex;
   align-items: flex-start;
@@ -193,7 +210,7 @@
   border-left: 1px solid var(--edge-strong);
 }
 
-.hour-divider-day {
+.wx-hour-divider-day {
   writing-mode: vertical-rl;
   font-size: 10px;
   font-weight: 600;
@@ -202,31 +219,31 @@
   white-space: nowrap;
 }
 
-/* ---- This week ----------------------------------------------------------- */
+/* ---- This week (5x3 and up) ------------------------------------------------ */
 
 /* Left padding is the gutter for the temperature labels. */
-.weather-week {
+.wx-week {
   flex: 1;
-  min-height: 140px;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   padding-left: 34px;
 }
 
-.week-body {
+.wx-week-body {
   position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.week-plot {
+.wx-week-plot {
   position: relative;
   flex: 1;
 }
 
 /* Horizontal temperature lines, labelled in the gutter. */
-.week-rule {
+.wx-week-rule {
   position: absolute;
   left: 0;
   right: 0;
@@ -234,7 +251,7 @@
   border-top: 1px solid var(--edge);
 }
 
-.week-rule-label {
+.wx-week-rule-label {
   position: absolute;
   right: calc(100% + 8px);
   top: -7px;
@@ -244,7 +261,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.week-line {
+.wx-week-line {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -252,7 +269,7 @@
   overflow: visible;
 }
 
-.week-line polyline {
+.wx-week-line polyline {
   fill: none;
   stroke: var(--text-dim);
   stroke-width: 1.5;
@@ -260,7 +277,7 @@
 
 /* Vertical line through the selected day, from the top down to its name.
    It quickly grows up into view, and slides from day to day. */
-.week-cursor {
+.wx-week-cursor {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -275,13 +292,13 @@
     opacity 120ms ease;
 }
 
-.week-cursor.shown {
+.wx-week-cursor.shown {
   opacity: 1;
   scale: 1 1;
 }
 
 /* One day: high above, the square, low below; centred on its point. */
-.week-point {
+.wx-week-point {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -293,7 +310,7 @@
 }
 
 /* A small solid square in the text colour (white or black). */
-.week-square {
+.wx-week-square {
   width: 9px;
   height: 9px;
   border-radius: var(--radius-sm);
@@ -302,60 +319,34 @@
 }
 
 /* The selected day's square grows a little. */
-.week-point.selected .week-square {
+.wx-week-point.selected .wx-week-square {
   scale: 1.45;
 }
 
-.week-high {
+.wx-week-high {
   font-size: 12px;
   font-weight: 600;
 }
 
-.week-low {
+.wx-week-low {
   min-height: 14px;
   font-size: 11px;
   color: var(--text-faint);
 }
 
-.week-days {
+.wx-week-days {
   display: grid;
   padding-top: 6px;
   text-align: center;
 }
 
-.week-day {
+.wx-week-day {
   font-size: 11px;
   color: var(--text-dim);
   transition: color 140ms ease;
 }
 
-.week-day.selected {
+.wx-week-day.selected {
   color: var(--text);
   font-weight: 600;
-}
-
-/* ---- Messages ------------------------------------------------------------ */
-
-.weather-message {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: var(--text-dim);
-  text-align: center;
-}
-
-.weather-message[hidden] {
-  display: none;
-}
-
-.weather-message p {
-  margin: 0;
-}
-
-/* Showing an old forecast because updating failed. */
-.weather[data-stale="true"] .weather-now {
-  opacity: 0.7;
 }

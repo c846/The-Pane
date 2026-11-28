@@ -1,4 +1,4 @@
-//! PC controls for the bottom-left quadrant: volume, brightness, power and
+//! PC controls for the widgets and the pane's buttons: volume, brightness, power and
 //! opening Windows Settings.
 //!
 //! Volume and brightness go through COM (Core Audio and WMI). All COM work
@@ -32,7 +32,7 @@ use windows_sys::Win32::Foundation::{LPARAM, RECT};
 use windows_sys::Win32::Graphics::Gdi::{EnumDisplayMonitors, HDC, HMONITOR};
 
 use crate::pane::Glance;
-use crate::{apps, pane};
+use crate::pane;
 
 // ---- COM worker thread ----------------------------------------------------------
 
@@ -105,8 +105,8 @@ pub async fn get_volume() -> Option<Volume> {
 }
 
 #[tauri::command]
-pub async fn set_volume(level: u32) {
-    on_com_thread(move || {
+pub async fn set_volume(app: AppHandle, level: u32) {
+    let volume = on_com_thread(move || {
         if let Ok(ep) = endpoint() {
             unsafe {
                 let _ = ep.SetMasterVolumeLevelScalar(level.min(100) as f32 / 100.0, std::ptr::null());
@@ -116,8 +116,18 @@ pub async fn set_volume(level: u32) {
                 }
             }
         }
+        read_volume()
     })
-    .await;
+    .await
+    .flatten();
+    volume_changed(&app, volume);
+}
+
+/// Tell every window's volume widgets the new level.
+fn volume_changed(app: &AppHandle, volume: Option<Volume>) {
+    if let Some(volume) = volume {
+        let _ = app.emit("volume-changed", volume);
+    }
 }
 
 // ---- Volume keys and the volume popup ------------------------------------------
@@ -166,6 +176,8 @@ pub fn volume_key(app: &AppHandle, key: VolumeKey) {
         let Some(volume) = read_volume() else {
             return;
         };
+        // The desktop's volume widgets follow every change.
+        let _ = app.emit_to("desktop", "volume-changed", volume.clone());
         if !pane::glance(&app, Glance::Volume) {
             let _ = app.emit_to("pane", "volume-changed", volume);
             return;
@@ -182,15 +194,18 @@ pub fn volume_key(app: &AppHandle, key: VolumeKey) {
 }
 
 #[tauri::command]
-pub async fn set_muted(muted: bool) {
-    on_com_thread(move || {
+pub async fn set_muted(app: AppHandle, muted: bool) {
+    let volume = on_com_thread(move || {
         if let Ok(ep) = endpoint() {
             unsafe {
                 let _ = ep.SetMute(muted, std::ptr::null());
             }
         }
+        read_volume()
     })
-    .await;
+    .await
+    .flatten();
+    volume_changed(&app, volume);
 }
 
 // ---- Brightness ----------------------------------------------------------------
@@ -368,12 +383,14 @@ pub async fn get_brightness() -> Option<u32> {
 }
 
 #[tauri::command]
-pub async fn set_brightness(level: u32) {
+pub async fn set_brightness(app: AppHandle, level: u32) {
     on_com_thread(move || {
         let _ = set_laptop_brightness(level);
         set_external_brightness(level);
     })
     .await;
+    // Every window's brightness widgets follow.
+    let _ = app.emit("brightness-changed", level.min(100));
 }
 
 // ---- Battery -------------------------------------------------------------------
@@ -438,25 +455,16 @@ pub fn power(app: AppHandle, action: String) -> Result<(), String> {
         "sleep" => unsafe {
             SetSuspendState(false, false, false);
         },
-        // Leaving Windows: give the user their taskbar and notification settings back first.
         "signout" => unsafe {
-            crate::restore_windows();
             ExitWindowsEx(EWX_LOGOFF, SHTDN_REASON_FLAG_PLANNED);
         },
         "restart" => {
-            crate::restore_windows();
             shutdown(&["/r", "/t", "0"])?;
         }
         "shutdown" => {
-            crate::restore_windows();
             shutdown(&["/s", "/t", "0"])?;
         }
         _ => return Err(format!("Unknown power action: {action}")),
     }
     Ok(())
-}
-
-#[tauri::command]
-pub fn open_windows_settings(app: AppHandle) {
-    apps::shell_open_from_pane(&app, "ms-settings:");
 }

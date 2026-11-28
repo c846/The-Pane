@@ -4,8 +4,11 @@
 mod apps;
 mod calendar;
 mod debug_log;
-mod dnd;
+mod desktop;
 mod edge;
+mod explorer;
+mod first_run;
+mod frame;
 mod instance;
 mod keyboard;
 mod library;
@@ -14,22 +17,17 @@ mod pane;
 mod settings;
 mod switcher;
 mod system;
-mod taskbar;
 mod weather;
+mod widgets;
 mod win;
 
-use tauri::{Manager, RunEvent, WindowEvent};
+use tauri::{Manager, WindowEvent};
 
-/// Give the user back what The Pane changed while running: the taskbar and
-/// their Do Not Disturb setting.
-pub fn restore_windows() {
-    taskbar::restore();
-    dnd::restore();
-}
-
+/// Quitting on purpose brings Explorer back, so the screen isn't left empty.
 #[tauri::command]
 fn quit_app(app: tauri::AppHandle) {
-    restore_windows();
+    frame::restore();
+    explorer::restore();
     app.exit(0);
 }
 
@@ -38,14 +36,6 @@ fn main() {
     if !instance::claim() {
         return;
     }
-
-    // Whatever happens, try hard to give the user their taskbar back.
-    let default_panic = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        restore_windows();
-        default_panic(info);
-    }));
-    win::on_console_close(restore_windows);
 
     let app = tauri::Builder::default()
         // Don't let the window library register for raw keyboard input (we
@@ -58,8 +48,9 @@ fn main() {
         .device_event_filter(tauri::DeviceEventFilter::Always)
         .invoke_handler(tauri::generate_handler![
             pane::hide_pane,
-            pane::wallpaper_key,
-            pane::get_wallpaper,
+            desktop::wallpaper_key,
+            desktop::get_wallpaper,
+            desktop::pick_wallpaper,
             pane::reveal_pane,
             apps::list_apps,
             apps::app_icon,
@@ -74,12 +65,20 @@ fn main() {
             system::get_brightness,
             system::set_brightness,
             system::power,
-            system::open_windows_settings,
+            explorer::open_windows_settings,
+            explorer::windows_shell_running,
+            explorer::start_windows_shell,
+            explorer::stop_windows_shell,
             system::get_battery,
             settings::get_settings,
             settings::save_settings,
             weather::zip_location,
             weather::open_forecast_page,
+            widgets::get_widgets,
+            widgets::add_widget,
+            widgets::place_widget,
+            widgets::remove_widget,
+            widgets::lock_widgets,
             calendar::get_events,
             calendar::add_event,
             calendar::remove_event,
@@ -89,13 +88,18 @@ fn main() {
             media::media_seek,
             switcher::window_icon,
             switcher::window_preview,
+            switcher::overview_pick,
+            switcher::overview_close,
+            first_run::welcome,
+            first_run::welcome_done,
             quit_app
         ])
         .setup(|app| {
             let handle = app.handle().clone();
+            first_run::check();
             pane::init(&handle)?;
-            taskbar::hide();
-            dnd::turn_on();
+            desktop::init(&handle);
+            frame::start();
             apps::refresh_in_background();
             keyboard::install(handle.clone());
             instance::quit_when_asked(handle.clone());
@@ -131,9 +135,5 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while building The Pane");
 
-    app.run(|_app, event| {
-        if let RunEvent::Exit = event {
-            restore_windows();
-        }
-    });
+    app.run(|_app, _event| {});
 }

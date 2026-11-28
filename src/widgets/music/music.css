@@ -1,15 +1,16 @@
-/* Bottom-right quadrant: music. Album art on the left; track info, seek
-   bar and controls on the right. */
+/* Music. Album art on the left; track info, seek bar and controls on the
+   right. One row tall: art, title and artist, and the controls in a line. */
 
-.q-media {
+.widget-music .widget-body {
   justify-content: center;
+  padding: 16px;
 }
 
 .media {
   flex: 1;
   min-height: 0;
   display: flex;
-  gap: 24px;
+  gap: 20px;
 }
 
 .media[hidden],
@@ -18,12 +19,11 @@
   display: none;
 }
 
-/* Square album art, as tall as the quadrant allows. */
+/* Square album art, as tall as the widget allows. */
 .media-art {
   position: relative;
   flex: none;
   height: 100%;
-  max-height: 280px;
   max-width: 40%;
   aspect-ratio: 1 / 1;
   align-self: center;
@@ -55,18 +55,19 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 /* ---- Apps with media (only shown when there's more than one) ------------- */
 
 .media-sources {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
+  overflow: hidden;
 }
 
 .media-source {
+  flex: none;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -119,12 +120,12 @@
 
 .media-title {
   font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
 }
 
 .media-artist {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-dim);
 }
 
@@ -133,7 +134,7 @@
   color: var(--text-faint);
 }
 
-/* ---- Seek bar (uses the same slider style as volume/brightness) ---------- */
+/* ---- Seek bar ------------------------------------------------------------------ */
 
 .media-seek-row {
   display: flex;
@@ -168,8 +169,9 @@
 .media-button {
   --glass-tint: var(--tile-bg);
   --glass-filter: var(--glass-control);
-  width: 48px;
-  height: 48px;
+  flex: none;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -197,15 +199,41 @@
   outline-offset: 2px;
 }
 
+/* ---- One row tall -------------------------------------------------------------- */
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) {
+  padding: 12px;
+}
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) .media {
+  gap: 12px;
+}
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) :is(.media-sources, .media-details, .media-seek-row) {
+  display: none;
+}
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) .media-main {
+  gap: 8px;
+}
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) .media-title {
+  font-size: 15px;
+}
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) .media-artist {
+  font-size: 12px;
+}
+
+.widget-music .widget-body:is([data-size="3x1"], [data-size="4x1"]) .media-button {
+  width: 32px;
+  height: 32px;
+  --icon-size: 16px;
+}
+
 /* ---- Nothing playing --------------------------------------------------------- */
 
 .media-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
   color: var(--text-faint);
-  --icon-size: 40px;
+  --icon-size: 36px;
 }

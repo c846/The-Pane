@@ -1,83 +1,14 @@
+/* The pane: a sheet of glass with the top bar (Settings, Power, search)
+   across the top and its widgets filling the rest. Colours and controls
+   are shared with the desktop (shared/theme.css); so are the widgets and
+   their grid (shared/widget-host.css). */
+
 :root {
-  --radius: 1px;
-  --radius-sm: 1px;
   --gap: 16px;
-}
-
-/* Theme follows the wallpaper (set by backdrop.js on <html>).
-   Dark wallpaper: white text, glass with a light tinge. */
-:root,
-:root[data-wallpaper="dark"] {
-  --text: rgba(255, 255, 255, 0.92);
-  --text-dim: rgba(255, 255, 255, 0.6);
-  --text-faint: rgba(255, 255, 255, 0.4);
-  --tile-bg: rgba(255, 255, 255, 0.07);
-  --tile-bg-hover: rgba(255, 255, 255, 0.12);
-  --tile-border: rgba(255, 255, 255, 0.08);
-  --surface: rgba(255, 255, 255, 0.045);
-  --edge: rgba(255, 255, 255, 0.12);
-  --edge-strong: rgba(255, 255, 255, 0.28);
-  --focus: rgba(255, 255, 255, 0.7);
-  --placeholder: rgba(255, 255, 255, 0.2);
-  --selected: rgba(255, 255, 255, 0.12);
-  --hover: rgba(255, 255, 255, 0.06);
-  --menu-bg: rgba(28, 28, 34, 0.6);
-  --menu-bg-solid: #1c1c22;
-  --menu-shadow: rgba(0, 0, 0, 0.35);
-  /* Extra distortion each glass layer adds on top of what's behind it. */
-  --glass-panel: blur(18px) saturate(140%) brightness(1.04);
-  --glass-control: blur(12px) saturate(150%) brightness(1.08);
-}
-
-/* Light wallpaper: black text, glass with a slightly darker tinge. */
-:root[data-wallpaper="light"] {
-  --text: rgba(0, 0, 0, 0.9);
-  --text-dim: rgba(0, 0, 0, 0.62);
-  --text-faint: rgba(0, 0, 0, 0.45);
-  --tile-bg: rgba(0, 0, 0, 0.06);
-  --tile-bg-hover: rgba(0, 0, 0, 0.1);
-  --tile-border: rgba(0, 0, 0, 0.08);
-  --surface: rgba(0, 0, 0, 0.045);
-  --edge: rgba(0, 0, 0, 0.12);
-  --edge-strong: rgba(0, 0, 0, 0.3);
-  --focus: rgba(0, 0, 0, 0.7);
-  --placeholder: rgba(0, 0, 0, 0.16);
-  --selected: rgba(0, 0, 0, 0.1);
-  --hover: rgba(0, 0, 0, 0.05);
-  --menu-bg: rgba(238, 238, 242, 0.6);
-  --menu-bg-solid: #eeeef2;
-  --menu-shadow: rgba(0, 0, 0, 0.18);
-  --glass-panel: blur(18px) saturate(140%) brightness(0.97);
-  --glass-control: blur(12px) saturate(150%) brightness(0.94);
-}
-
-/* Glass layered on glass.
-   Each .glass element blurs whatever is already behind it — the wallpaper and
-   any glass beneath — so stacked layers get progressively more distorted.
-   The blur sits on a ::before layer rather than on the element itself: in
-   Chromium an element with backdrop-filter stops its children from seeing
-   past it, which would stop the layers from compounding. */
-.glass {
-  position: relative;
-}
-
-.glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--glass-tint, transparent);
-  backdrop-filter: var(--glass-filter, none);
-  pointer-events: none;
-}
-
-/* Keep content above the glass layer. */
-.glass > * {
-  position: relative;
-}
-
-* {
-  box-sizing: border-box;
+  /* Widgets are panels of glass on the pane's own glass. */
+  --widget-tint: var(--surface);
+  --widget-border: transparent;
+  --widget-glass: var(--glass-panel);
 }
 
 html,
@@ -134,7 +65,7 @@ body {
   visibility: hidden;
 }
 
-/* Search bar on top, four quadrants filling the rest. */
+/* The top bar on top, widgets filling the rest. */
 .pane {
   position: relative;
   height: 100%;
@@ -144,142 +75,83 @@ body {
   padding: 24px;
 }
 
-/* Two columns that size independently, so each quadrant can be as tall as
-   its content needs. Left: apps (sized to its tiles) above PC controls.
-   Right: weather & calendar above music. */
-.quadrants {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: clamp(380px, 26vw, 480px) minmax(0, 1fr);
-  gap: var(--gap);
-}
-
-.column {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap);
-}
-
-.column > .quadrant {
-  flex: 1;
-}
-
-.column > .q-apps {
+/* Settings and Power, then the search bar, centred together. */
+.top-bar {
+  position: relative;
+  z-index: 10; /* search results lie over the widgets */
   flex: none;
-}
-
-.quadrant {
-  --glass-tint: var(--surface);
-  --glass-filter: var(--glass-panel);
-  min-width: 0;
-  min-height: 0;
+  width: 100%;
+  max-width: calc(640px + 2 * (44px + 10px));
+  margin: 0 auto;
   display: flex;
-  flex-direction: column;
-  padding: 16px;
-  border-radius: var(--radius);
-}
-
-/* [hidden] has to beat the display values set on these. */
-.quadrant[hidden],
-.column[hidden],
-.slider-row[hidden] {
-  display: none;
-}
-
-/* Square tiles, three to a row (apps, PC controls). */
-.tile-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-.tile {
+/* Square buttons as tall as the search bar. */
+.top-button {
   --glass-tint: var(--tile-bg);
-  --glass-filter: var(--glass-control);
-  min-width: 0;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  flex-direction: column;
+  --glass-filter: var(--glass-panel);
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px;
+  padding: 0;
   border: 1px solid var(--tile-border);
   border-radius: var(--radius);
   background: transparent;
   color: var(--text);
-  font: inherit;
-  font-size: 12px;
+  --icon-size: 22px;
 }
 
-.tile:hover {
+.top-button:hover,
+.top-button[aria-expanded="true"] {
   --glass-tint: var(--tile-bg-hover);
 }
 
-/* Up to two lines, then "…". */
-.tile-label {
-  max-width: 100%;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-height: 1.3;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.tile:focus-visible,
-.button:focus-visible {
+.top-button:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-/* Monochrome icons from the icons folder, drawn in the text color so they
-   follow the light/dark theme. Set --icon to the image. */
-.icon {
-  display: inline-block;
-  flex: none;
-  width: var(--icon-size, 20px);
-  height: var(--icon-size, 20px);
-  background-color: currentColor;
-  -webkit-mask: var(--icon) center / contain no-repeat;
-  mask: var(--icon) center / contain no-repeat;
+/* Where the pane's widgets go (widget-host.js lays them out in it). */
+.pane-widgets {
+  flex: 1;
+  min-height: 0;
 }
 
-.icon-volume { --icon: url("icons/volume.png"); }
-.icon-power { --icon: url("icons/power.png"); }
-.icon-windows-settings { --icon: url("icons/windows-settings.png"); }
-.icon-music { --icon: url("icons/music.png"); }
-.icon-play { --icon: url("icons/play.png"); }
-.icon-pause { --icon: url("icons/pause.png"); }
-.icon-next { --icon: url("icons/next.png"); }
-.icon-previous { --icon: url("icons/previous.png"); }
-.icon-battery-saver { --icon: url("icons/battery-saver.png"); }
-
-/* Text button (e.g. "Done"). */
-.button {
-  --glass-tint: var(--tile-bg);
-  --glass-filter: var(--glass-control);
-  min-width: 88px;
-  height: 32px;
-  padding: 0 16px;
-  border: 1px solid var(--tile-border);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--text);
-  font: inherit;
+/* Pane widgets grow a little while hovered, as the pane's panels always
+   did (not while being arranged). */
+.pane-widgets > .widget {
+  transition:
+    scale var(--grow),
+    box-shadow var(--grow);
 }
 
-.button:hover {
-  --glass-tint: var(--tile-bg-hover);
+.pane-widgets:not(.arranging) > .widget:not(.dragging):hover {
+  z-index: 1; /* its shadow lies over its neighbours */
+  scale: 1.008;
+  box-shadow: var(--lift-shadow);
 }
 
-/* Small heading over a group of controls. */
-.group-label {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-faint);
+/* A pane with no widgets says so, with a way to add some. widget-host.js
+   marks the layer .empty while it has none. */
+.pane-empty {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-dim);
+}
+
+.pane-empty p {
+  margin: 0;
+}
+
+.pane-widgets.empty > .pane-empty {
+  display: flex;
 }

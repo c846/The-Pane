@@ -26,7 +26,7 @@ window.Backdrop = (() => {
     url = null;
     if (!bytes || bytes.byteLength === 0) {
       el.style.backgroundImage = "none";
-      setTheme(false); // plain dark background
+      setTheme(true); // no wallpaper: solid white
       return;
     }
     url = URL.createObjectURL(new Blob([bytes]));
@@ -71,5 +71,14 @@ window.Backdrop = (() => {
   }
 
   refresh();
-  return { refresh };
+  return {
+    refresh,
+    // The wallpaper as an object URL (null if none), and its file path.
+    get url() {
+      return url;
+    },
+    get path() {
+      return key ? key.slice(0, key.lastIndexOf("|")) : "";
+    },
+  };
 })();

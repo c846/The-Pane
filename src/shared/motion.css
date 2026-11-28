@@ -1,4 +1,4 @@
-/* Shared animation: hover highlights fade, panels and buttons grow a little
+/* Shared animation (pane and desktop): hover highlights fade, buttons grow a little
    (with a soft shadow) while hovered, slider handles grow. Pressing is in
    motion.js; component-specific motion lives with each component. */
 
@@ -21,11 +21,6 @@
 
 .result,
 .menu-item,
-.hour,
-.cal-day,
-.cal-title,
-.cal-arrow,
-.now-place,
 .text-input,
 .search-box,
 .switch input {
@@ -37,15 +32,15 @@
   transition: left var(--grow), background-color var(--fade);
 }
 
-/* ---- Panels grow a little while hovered ------------------------------------- */
+/* ---- Buttons grow a little while hovered ------------------------------------ */
 
-.quadrant,
 .tile:not(.tile-empty),
 .button,
-.alert-badge,
+.top-button,
+.wx-alert,
 .media-button,
 .media-source,
-.slider-icon {
+.level-icon {
   transition:
     scale var(--grow),
     box-shadow var(--grow),
@@ -54,26 +49,16 @@
     border-color var(--fade);
 }
 
-.quadrant:hover {
-  z-index: 1; /* its shadow lies over its neighbours */
-  scale: 1.008;
-  box-shadow: var(--lift-shadow);
-}
-
 .tile:not(.tile-empty):hover,
 .button:hover,
-.alert-badge:hover,
+.top-button:hover,
+.wx-alert:hover,
 .media-button:hover:not(:disabled),
 .media-source:hover,
-button.slider-icon:hover {
+button.level-icon:hover {
   z-index: 1;
   scale: 1.05;
   box-shadow: var(--lift-shadow);
-}
-
-/* The big Settings and Power tiles need less to show it. */
-.pc-actions .tile:hover {
-  scale: 1.025;
 }
 
 /* ---- Slider handles grow while hovered or dragged ---------------------------- */

@@ -161,7 +161,7 @@ window.Search = (() => {
       li.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         select(i);
-        window.Menu.open({ x: e.clientX, y: e.clientY }, window.AppsPanel.menuFor(r.app));
+        window.Menu.open({ x: e.clientX, y: e.clientY }, window.AppLists.menuFor(r.app));
       });
       list.append(li);
     });

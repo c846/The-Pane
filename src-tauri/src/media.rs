@@ -1,4 +1,4 @@
-//! Music: what's playing and its controls, for the bottom-right quadrant.
+//! Music: what's playing and its controls, for the Music widgets.
 //!
 //! Uses Windows' own media sessions (the same thing behind the media controls
 //! in Quick Settings), so it works with Spotify, browsers, Media Player and
