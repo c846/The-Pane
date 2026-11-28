@@ -17,6 +17,7 @@ mod pane;
 mod settings;
 mod switcher;
 mod system;
+mod updater;
 mod weather;
 mod widgets;
 mod win;
@@ -46,6 +47,7 @@ fn main() {
         // This also drops its raw mouse input; edge.rs registers its own
         // afterwards, in setup.
         .device_event_filter(tauri::DeviceEventFilter::Always)
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             pane::hide_pane,
             desktop::wallpaper_key,
@@ -92,6 +94,8 @@ fn main() {
             switcher::overview_close,
             first_run::welcome,
             first_run::welcome_done,
+            updater::pending_update,
+            updater::install_update,
             quit_app
         ])
         .setup(|app| {
@@ -103,6 +107,7 @@ fn main() {
             apps::refresh_in_background();
             keyboard::install(handle.clone());
             instance::quit_when_asked(handle.clone());
+            updater::check_in_background(handle.clone());
             // Dev aid: PANE_DEBUG_OPEN=1 opens the pane on launch (debug builds only).
             #[cfg(debug_assertions)]
             if std::env::var("PANE_DEBUG_OPEN").is_ok() {

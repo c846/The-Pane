@@ -1,0 +1,78 @@
+# Every push to main builds a signed installer and publishes it as the latest
+# GitHub release, with the latest.json that installed copies of The Pane check
+# at startup (see src-tauri/src/updater.rs).
+#
+# The version is the major.minor from tauri.conf.json plus this workflow's run
+# number (e.g. 0.1.42), so every push is newer than the last without bumping
+# anything by hand. Bump major.minor in tauri.conf.json whenever you like.
+#
+# Needs the repository secret TAURI_SIGNING_PRIVATE_KEY (the contents of the
+# private key whose public half is plugins.updater.pubkey in tauri.conf.json).
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One release at a time, in push order.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      # Stamp this build's version, and have it produce the signed updater
+      # files (only here, so local builds don't need the signing key).
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          version=$(node -e '
+            const fs = require("fs");
+            const f = "src-tauri/tauri.conf.json";
+            const c = JSON.parse(fs.readFileSync(f, "utf8"));
+            const [major, minor] = c.version.split(".");
+            c.version = `${major}.${minor}.${process.env.RUN}`;
+            c.bundle.createUpdaterArtifacts = true;
+            fs.writeFileSync(f, JSON.stringify(c, null, 2));
+            console.log(c.version);
+          ')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+        env:
+          RUN: ${{ github.run_number }}
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v${{ steps.version.outputs.version }}
+          releaseName: The Pane ${{ steps.version.outputs.version }}
+          # Shown as "What's new" in the update card.
+          releaseBody: ${{ github.event.head_commit.message || 'The latest changes from main.' }}
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
