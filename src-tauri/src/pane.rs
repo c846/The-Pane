@@ -53,6 +53,8 @@ pub enum Glance {
     Switcher = 2,
     /// Every open window in a grid, covering the screen (Alt + held Space).
     Overview = 3,
+    /// The battery is low (system.rs).
+    Battery = 4,
 }
 
 static MODE: AtomicU8 = AtomicU8::new(HIDDEN);
@@ -198,6 +200,15 @@ pub fn glance(app: &AppHandle, kind: Glance) -> bool {
     }
     GLANCE_KIND.store(kind as u8, Ordering::SeqCst);
     true
+}
+
+/// Like `glance`, but only if the pane isn't open or showing another glance
+/// (for notices, which can wait rather than interrupt).
+pub fn glance_if_free(app: &AppHandle, kind: Glance) -> bool {
+    if matches!(MODE.load(Ordering::SeqCst), OPEN | GLANCE) {
+        return false;
+    }
+    glance(app, kind)
 }
 
 /// Whether the pane is glancing at `kind` right now.

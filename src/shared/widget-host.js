@@ -41,6 +41,7 @@
 //   });
 //
 // ctx gives it what differs between surfaces, and tidies up after it:
+//   ctx.id               this placed widget's id (unique; kept across restarts)
 //   ctx.surface          "pane" or "desktop"
 //   ctx.visible          whether its surface is in view (the pane is only
 //                        while it's open; the desktop always is)
@@ -303,6 +304,7 @@ window.Widgets = (() => {
         r.timer = setInterval(r.fn, r.ms);
       };
       const ctx = {
+        id: placed.id,
         surface,
         canType,
         openSettings,

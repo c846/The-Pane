@@ -4,6 +4,9 @@
 // Volume popup  "volume-popup" {level, muted}: a volume key was pressed.
 //               Just a vertical bar with the level above it. The backend
 //               slides it away shortly after the last press.
+// Low battery   "battery-low": the battery just got low. A battery with a
+//               "!" beside it that bounces twice; the backend slides it
+//               away after a few seconds.
 //               ("volume-changed" instead, when the pane is fully open:
 //               only the volume widgets move; they listen for both.)
 // Switcher      "switcher-open" {windows, selected}: Alt+Space. A preview
@@ -53,6 +56,19 @@ window.Glance = (() => {
     showVolume(payload, sheet.dataset.glance === "volume");
     window.Backdrop.refresh(); // in case the wallpaper (and so the theme) changed
     window.Slide.glance("volume");
+  });
+
+  // ---- Low battery ---------------------------------------------------------------
+
+  const batteryAlert = $("battery-pop-alert");
+
+  listen("battery-low", () => {
+    // Restart the bounce.
+    batteryAlert.classList.remove("bounce");
+    batteryAlert.getBoundingClientRect();
+    batteryAlert.classList.add("bounce");
+    window.Backdrop.refresh();
+    window.Slide.glance("battery");
   });
 
   // ---- Window switcher -----------------------------------------------------------

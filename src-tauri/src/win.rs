@@ -74,6 +74,17 @@ pub fn make_tool_window(h: isize, no_activate: bool) {
     }
 }
 
+/// Let a window take focus (or stop it again), after `make_tool_window`.
+pub fn set_no_activate(h: isize, on: bool) {
+    unsafe {
+        let old = GetWindowLongPtrW(hwnd(h), GWL_EXSTYLE) as u32;
+        let style = if on { old | WS_EX_NOACTIVATE } else { old & !WS_EX_NOACTIVATE };
+        if style != old {
+            SetWindowLongPtrW(hwnd(h), GWL_EXSTYLE, style as isize);
+        }
+    }
+}
+
 /// Let mouse clicks pass straight through a window to whatever is behind it
 /// (or stop doing so). Same styles Tauri uses for `set_ignore_cursor_events`;
 /// done directly so Tauri's idea of the window's state isn't disturbed.

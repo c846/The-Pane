@@ -13,7 +13,8 @@
 // and pane.js calls Slide.open() / Slide.close() around opening and closing.
 //
 // Slide.glance(kind) opens the pane partway to show something brief in a
-// strip along its edge (glance.js: the volume popup or window switcher),
+// strip along its edge (glance.js: the volume popup, low battery notice or
+// window switcher),
 // with the rest of the pane faded out. data-glance on the sheet says which.
 window.Slide = (() => {
   const { listen } = window.__TAURI__.event;
@@ -30,7 +31,7 @@ window.Slide = (() => {
   const FOLLOW_MS = 45;
   // How far a glance opens the pane (CSS px), and how long that takes.
   // The overview goes all the way across (goal() caps it at the screen).
-  const GLANCE_WIDTH = { volume: 42, switcher: 380, overview: Infinity };
+  const GLANCE_WIDTH = { volume: 42, battery: 64, switcher: 380, overview: Infinity };
   const GLANCE_MS = 300;
 
   const easeOut = (t) => 1 - Math.pow(1 - t, 4);

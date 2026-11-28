@@ -180,7 +180,9 @@ pub fn place_widget(app: AppHandle, id: String, col: i32, row: i32, w: u32, h: u
 
 #[tauri::command]
 pub fn remove_widget(app: AppHandle, id: String) -> Result<(), String> {
-    update(&app, |l| l.widgets.retain(|p| p.id != id))
+    update(&app, |l| l.widgets.retain(|p| p.id != id))?;
+    crate::notes::forget(&id);
+    Ok(())
 }
 
 #[tauri::command]

@@ -27,6 +27,7 @@
 }
 
 .sheet[data-glance="volume"] .glance-volume,
+.sheet[data-glance="battery"] .glance-battery,
 .sheet[data-glance="switcher"] .glance-switcher,
 .sheet[data-glance="overview"] .glance-overview {
   opacity: 1;
@@ -79,6 +80,49 @@
 .volume-pop.muted .volume-pop-value,
 .volume-pop.muted .volume-pop-track {
   opacity: 0.4;
+}
+
+/* ---- Low battery: a battery with a "!" beside it that bounces twice ------- */
+
+.glance-battery {
+  width: 64px;
+}
+
+.battery-pop {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  color: var(--text);
+}
+
+.battery-pop-icon {
+  --icon-size: 26px;
+}
+
+.battery-pop-alert {
+  --icon-size: 20px;
+}
+
+/* Starts once the pane has slid out (Slide's GLANCE_MS). */
+.battery-pop-alert.bounce {
+  animation: battery-bounce 900ms 320ms both;
+}
+
+@keyframes battery-bounce {
+  0%,
+  44%,
+  100% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1);
+  }
+  20% {
+    translate: 0 -10px;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.7, 1);
+  }
+  70% {
+    translate: 0 -6px;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.7, 1);
+  }
 }
 
 /* ---- Window switcher: a preview and name per window ------------------------- */

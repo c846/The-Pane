@@ -14,4 +14,5 @@ window.WidgetList = [
   "volume",
   "brightness",
   "battery",
+  "notes",
 ];

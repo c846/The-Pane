@@ -429,6 +429,44 @@ pub fn get_battery() -> Option<Battery> {
     })
 }
 
+/// At or below this much charge (and not plugged in), the battery is low.
+const LOW_BATTERY: u8 = 15;
+/// How often the watcher checks the battery.
+const BATTERY_EVERY: Duration = Duration::from_secs(30);
+/// How long the low battery notice stays out (time for the page to slide
+/// it in and bounce the "!" twice, then a moment to see it).
+const BATTERY_NOTICE_FOR: Duration = Duration::from_millis(2_800);
+
+/// Call once at startup: watches the battery, and when it gets low, slides
+/// the pane out a little to show a low battery notice ("battery-low"; see
+/// glance.js), then back. Once per discharge: it's shown again only after
+/// the PC has been plugged in or charged above the threshold. If the pane
+/// is open or busy with another glance, the notice waits for the next check.
+pub fn watch_battery(app: AppHandle) {
+    // Dev aid (debug builds): PANE_DEBUG_BATTERY=1 shows the notice shortly
+    // after launch, whatever the battery says.
+    let mut force = cfg!(debug_assertions) && std::env::var("PANE_DEBUG_BATTERY").is_ok();
+    std::thread::spawn(move || {
+        if force {
+            std::thread::sleep(Duration::from_secs(3));
+        }
+        let mut shown = false;
+        loop {
+            let low = force || get_battery().is_some_and(|b| b.percent <= LOW_BATTERY && !b.plugged_in);
+            if !low {
+                shown = false;
+            } else if !shown && pane::glance_if_free(&app, Glance::Battery) {
+                shown = true;
+                force = false;
+                let _ = app.emit_to("pane", "battery-low", ());
+                std::thread::sleep(BATTERY_NOTICE_FOR);
+                pane::unglance(&app, Glance::Battery);
+            }
+            std::thread::sleep(BATTERY_EVERY);
+        }
+    });
+}
+
 // ---- Power and Settings --------------------------------------------------------
 
 #[tauri::command]

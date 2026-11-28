@@ -1,0 +1,28 @@
+/* Notes: a plain text box filling the widget, in the system font. */
+
+.widget-notes .widget-body {
+  padding: 0;
+}
+
+.notes-text {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 14px;
+  border: none;
+  border-radius: inherit;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font-family: system-ui, "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  scrollbar-width: thin;
+  cursor: text;
+}
+
+.notes-text::placeholder {
+  color: var(--text-faint);
+}

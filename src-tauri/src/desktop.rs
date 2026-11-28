@@ -240,6 +240,21 @@ pub fn clear_wallpaper() {
 
 /// Identifies the current wallpaper (path + last-modified time), so the page
 /// only reloads the image when it actually changed. Empty if there is none.
+/// The desktop never takes focus, except while a widget on it is being typed
+/// in (a note): `on` lets it take the keyboard, and `off` (when the typing
+/// is over, e.g. another app was clicked) goes back to never taking focus.
+/// The window stays behind every app either way ("always on bottom").
+#[tauri::command]
+pub fn desktop_keyboard(on: bool) {
+    let Some(h) = desktop_hwnd() else {
+        return;
+    };
+    win::set_no_activate(h, !on);
+    if on {
+        win::force_foreground(h);
+    }
+}
+
 #[tauri::command]
 pub fn wallpaper_key() -> String {
     let Some(path) = win::wallpaper_path() else {

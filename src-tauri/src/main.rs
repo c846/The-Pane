@@ -13,6 +13,7 @@ mod instance;
 mod keyboard;
 mod library;
 mod media;
+mod notes;
 mod pane;
 mod settings;
 mod switcher;
@@ -53,6 +54,9 @@ fn main() {
             desktop::wallpaper_key,
             desktop::get_wallpaper,
             desktop::pick_wallpaper,
+            desktop::desktop_keyboard,
+            notes::get_note,
+            notes::save_note,
             pane::reveal_pane,
             apps::list_apps,
             apps::app_icon,
@@ -108,6 +112,7 @@ fn main() {
             keyboard::install(handle.clone());
             instance::quit_when_asked(handle.clone());
             updater::check_in_background(handle.clone());
+            system::watch_battery(handle.clone());
             // Dev aid: PANE_DEBUG_OPEN=1 opens the pane on launch (debug builds only).
             #[cfg(debug_assertions)]
             if std::env::var("PANE_DEBUG_OPEN").is_ok() {
